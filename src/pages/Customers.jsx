@@ -273,18 +273,27 @@ export default function Customers() {
       player.status === 'SUSPENDED' || player.status === 'FROZEN';
     const nextStatus = isCurrentlySuspended ? 'KYC_APPROVED' : 'SUSPENDED';
 
+    const isMatch = (c) =>
+      c.id === player.id ||
+      (c.phone && player.phone && c.phone === player.phone) ||
+      (c.username && player.username && c.username.toLowerCase() === player.username.toLowerCase());
+
     setCustomers((prev) =>
-      prev.map((c) => (c.id === player.id ? { ...c, status: nextStatus } : c))
+      prev.map((c) => (isMatch(c) ? { ...c, status: nextStatus } : c))
     );
 
     try {
       const identifier = (player.phone || player.username || player.id).replace(/\s+/g, '');
-      await adminApi.manageUserAccount(identifier, {
+      const res = await adminApi.manageUserAccount(identifier, {
         action: nextStatus === 'SUSPENDED' ? 'SUSPEND' : 'ACTIVATE',
       });
+      const confirmedStatus = res?.data?.account_status || nextStatus;
+      setCustomers((prev) =>
+        prev.map((c) => (isMatch(c) ? { ...c, status: confirmedStatus } : c))
+      );
       setMsg(
         `${player.name} (${player.phone}) account ${
-          nextStatus === 'SUSPENDED' ? 'SUSPENDED' : 'REACTIVATED'
+          confirmedStatus === 'SUSPENDED' ? 'SUSPENDED' : 'REACTIVATED'
         } on backend.`
       );
       await fetchBackendUsers();
@@ -299,12 +308,18 @@ export default function Customers() {
 
   async function handleUpgradeLevel(player) {
     if (!canManage) return;
-    const nextTier = player.tier >= 4 ? 1 : player.tier + 1;
+    const currentTier = Number(player.tier || 1);
+    const nextTier = currentTier >= 4 ? 1 : currentTier + 1;
     const nextLabel = LEVEL_LABELS[nextTier] || `Level ${nextTier}`;
+
+    const isMatch = (c) =>
+      c.id === player.id ||
+      (c.phone && player.phone && c.phone === player.phone) ||
+      (c.username && player.username && c.username.toLowerCase() === player.username.toLowerCase());
 
     setCustomers((prev) =>
       prev.map((c) =>
-        c.id === player.id
+        isMatch(c)
           ? {
               ...c,
               tier: nextTier,
@@ -317,11 +332,48 @@ export default function Customers() {
 
     try {
       const identifier = (player.phone || player.username || player.id).replace(/\s+/g, '');
-      await adminApi.manageUserAccount(identifier, {
+      const res = await adminApi.manageUserAccount(identifier, {
         action: 'UPGRADE_LEVEL',
         kyc_tier: nextTier,
       });
-      setMsg(`Upgraded ${player.name} to ${nextLabel} on backend!`);
+
+      const confirmedTier = Number(res?.data?.kyc_tier || nextTier);
+      const confirmedLabel = LEVEL_LABELS[confirmedTier] || `Level ${confirmedTier}`;
+
+      // Update state with server confirmed tier immediately
+      setCustomers((prev) =>
+        prev.map((c) =>
+          isMatch(c)
+            ? {
+                ...c,
+                tier: confirmedTier,
+                levelName: confirmedLabel,
+                status: res?.data?.account_status || (c.status === 'SUSPENDED' ? 'SUSPENDED' : 'KYC_APPROVED'),
+              }
+            : c
+        )
+      );
+
+      // If this upgraded user is also the active connected BetAura account, sync their stored tier
+      if (admin?.connectedBetauraAccount) {
+        const connPhone = admin.connectedBetauraAccount.phone_number;
+        const connUname = admin.connectedBetauraAccount.username;
+        if (
+          (connPhone && connPhone === player.phone) ||
+          (connUname && player.username && connUname.toLowerCase() === player.username.toLowerCase())
+        ) {
+          try {
+            const rawConn = localStorage.getItem('betaura_super_connected_account');
+            if (rawConn) {
+              const parsedConn = JSON.parse(rawConn);
+              parsedConn.tier = confirmedTier;
+              localStorage.setItem('betaura_super_connected_account', JSON.stringify(parsedConn));
+            }
+          } catch {}
+        }
+      }
+
+      setMsg(`Upgraded ${player.name} to ${confirmedLabel} on backend!`);
       await fetchBackendUsers();
     } catch {
       setMsg(`Upgraded ${player.name} to ${nextLabel}!`);
