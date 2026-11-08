@@ -105,34 +105,9 @@ export default function Sidebar({ onQuickAction }) {
         ))}
       </nav>
 
-      {/* Bottom Green Promotional CTA Card (Sedap style) + Log Out */}
-      <div className="p-5 space-y-3">
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2.5 text-xs font-extrabold transition"
-        >
-          <LogOut className="w-4 h-4" />
-          <span>Log Out ({admin?.name || 'Admin'})</span>
-        </button>
-
-        <div className="relative overflow-hidden rounded-2xl bg-[#00b074] p-4 text-white shadow-md">
-          <div className="relative z-10 max-w-[140px]">
-            <p className="text-[11px] leading-relaxed text-white/90 font-medium">
-              Organize live matches, odds & payouts via button below!
-            </p>
-            <button
-              type="button"
-              onClick={onQuickAction}
-              className="mt-3 inline-flex items-center justify-center rounded-lg bg-white px-3.5 py-1.5 text-xs font-bold text-gray-800 shadow-sm hover:bg-gray-50 transition"
-            >
-              +Sync Fixtures
-            </button>
-          </div>
-          <Crown className="w-16 h-16 text-white/15 fill-white/15 absolute -bottom-2 -right-2 pointer-events-none" />
-        </div>
-
-        <div className="mt-5 px-1 text-[11px] text-gray-400 space-y-0.5">
+      {/* Bottom Footer Info */}
+      <div className="p-5">
+        <div className="px-1 text-[11px] text-gray-400 space-y-0.5">
           <p className="font-semibold text-gray-500">BetAura Sportsbook Admin</p>
           <p>© 2026 All Rights Reserved</p>
           <p className="pt-1">
