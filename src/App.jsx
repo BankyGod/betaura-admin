@@ -14,6 +14,8 @@ import LiveSync from './pages/LiveSync';
 import WalletPage from './pages/WalletPage';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
+import CustomGames from './pages/CustomGames';
+import SubAdmins from './pages/SubAdmins';
 
 export default function App() {
   return (
@@ -23,6 +25,8 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route element={<AdminLayout />}>
             <Route path="/" element={<Home />} />
+            <Route path="/custom-games" element={<CustomGames />} />
+            <Route path="/sub-admins" element={<SubAdmins />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/order-detail" element={<OrderDetail />} />
             <Route path="/customers" element={<Customers />} />

@@ -1,103 +1,139 @@
-import { Search, Bell, MessageSquare, Gift, Settings, Smartphone, Monitor } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Bell, MessageSquare, Gift, Settings, Link2, CheckCircle2, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-export default function Topbar({ searchQuery, onSearchChange, viewMode, onToggleViewMode }) {
-  const { admin } = useAuth();
+export default function Topbar({ searchQuery, onSearchChange }) {
+  const { admin, setConnectModalOpen, logoutAdmin } = useAuth();
+  const navigate = useNavigate();
+  const connectedAcc = admin?.connectedBetauraAccount;
+
+  function handleLogout() {
+    logoutAdmin();
+    navigate('/login');
+  }
+
+  function handleSearchSubmit(e) {
+    e.preventDefault();
+    const q = (searchQuery || '').trim();
+    if (!q) return;
+    if (/^(BA-|GHY|[A-Z0-9]{6}$)/i.test(q)) {
+      navigate(`/order-detail?code=${encodeURIComponent(q)}`);
+    } else {
+      navigate(`/fixtures?search=${encodeURIComponent(q)}`);
+    }
+  }
 
   return (
-    <header className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 bg-[#f3f2f7]">
-      {/* Search input (Sedap style) */}
-      <div className="relative flex-1 min-w-[220px] max-w-xl">
+    <header className="flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 py-3.5 bg-[#f3f2f7]">
+      {/* Search input (Sedap style) - flex-1 min-w-0 prevents wrapping */}
+      <form onSubmit={handleSearchSubmit} className="relative flex-1 min-w-0 max-w-md lg:max-w-xl">
         <input
           type="text"
           value={searchQuery || ''}
           onChange={(e) => onSearchChange?.(e.target.value)}
-          placeholder="Search here"
-          className="w-full rounded-xl bg-white pl-4 pr-10 py-2.5 text-sm text-gray-700 placeholder-gray-400 border border-transparent focus:border-[#00b074] focus:outline-none shadow-xs"
+          placeholder="Search ticket ID (BA-...), team, or league..."
+          className="w-full rounded-xl bg-white pl-4 pr-9 py-2.5 text-xs sm:text-sm text-gray-700 placeholder-gray-400 border border-transparent focus:border-[#00b074] focus:outline-none shadow-xs"
         />
-        <Search className="w-4 h-4 text-gray-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
-      </div>
+        <button
+          type="submit"
+          aria-label="Search"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#00b074]"
+        >
+          <Search className="w-4 h-4" />
+        </button>
+      </form>
 
-      {/* Action Badges + Profile */}
-      <div className="flex items-center gap-3">
-        {/* View mode toggle: Desktop Sedap vs Mobile Profit Kings preview */}
-        {onToggleViewMode && (
+      {/* Right Side Action Badges + Profile (shrink-0 keeps it on the same row) */}
+      <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+        <button
+          type="button"
+          onClick={() => setConnectModalOpen(true)}
+          className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-extrabold transition shadow-xs ${
+            connectedAcc
+              ? 'bg-[#d9f3ea] text-[#00b074] hover:bg-[#c5ebd9]'
+              : 'bg-[#00b074] text-white hover:bg-[#0a873c]'
+          }`}
+        >
+          {connectedAcc ? (
+            <>
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>
+                BetAura: {connectedAcc.username || connectedAcc.phone_number}
+              </span>
+            </>
+          ) : (
+            <>
+              <Link2 className="w-3.5 h-3.5" />
+              <span>Connect BetAura Account</span>
+            </>
+          )}
+        </button>
+
+        {/* 4 Sedap Action Badges wired to admin sections */}
+        <div className="hidden md:flex items-center gap-2">
           <button
             type="button"
-            onClick={onToggleViewMode}
-            className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-gray-700 shadow-xs hover:bg-gray-50 transition border border-gray-100"
-            title="Switch between Sedap Desktop & Profit Kings Mobile View"
-          >
-            {viewMode === 'mobile' ? (
-              <>
-                <Monitor className="w-4 h-4 text-[#00b074]" />
-                <span>Desktop View</span>
-              </>
-            ) : (
-              <>
-                <Smartphone className="w-4 h-4 text-[#00b074]" />
-                <span>Profit Kings View</span>
-              </>
-            )}
-          </button>
-        )}
-
-        {/* 4 Sedap Notification Badges */}
-        <div className="hidden md:flex items-center gap-2.5">
-          <button
-            type="button"
-            className="relative w-10 h-10 rounded-xl bg-[#2d9cdb]/15 text-[#2d9cdb] flex items-center justify-center hover:bg-[#2d9cdb]/25 transition"
+            onClick={() => navigate('/audit-logs')}
+            title="Audit Logs & Alerts"
+            className="relative w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-[#2d9cdb]/15 text-[#2d9cdb] flex items-center justify-center hover:bg-[#2d9cdb]/25 transition"
           >
             <Bell className="w-4 h-4" />
-            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#2d9cdb] text-white text-[10px] font-bold flex items-center justify-center border-2 border-[#f3f2f7]">
-              21
-            </span>
           </button>
 
           <button
             type="button"
-            className="relative w-10 h-10 rounded-xl bg-[#2d9cdb]/15 text-[#2d9cdb] flex items-center justify-center hover:bg-[#2d9cdb]/25 transition"
+            onClick={() => navigate('/live-sync')}
+            title="Live Feed Sync"
+            className="relative w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-[#2d9cdb]/15 text-[#2d9cdb] flex items-center justify-center hover:bg-[#2d9cdb]/25 transition"
           >
             <MessageSquare className="w-4 h-4" />
-            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#2d9cdb] text-white text-[10px] font-bold flex items-center justify-center border-2 border-[#f3f2f7]">
-              53
-            </span>
           </button>
 
           <button
             type="button"
-            className="relative w-10 h-10 rounded-xl bg-[#5e6c93]/15 text-[#5e6c93] flex items-center justify-center hover:bg-[#5e6c93]/25 transition"
+            onClick={() => navigate('/referrals')}
+            title="Referral Bonuses"
+            className="relative w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-[#5e6c93]/15 text-[#5e6c93] flex items-center justify-center hover:bg-[#5e6c93]/25 transition"
           >
             <Gift className="w-4 h-4" />
-            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#5e6c93] text-white text-[10px] font-bold flex items-center justify-center border-2 border-[#f3f2f7]">
-              15
-            </span>
           </button>
 
           <button
             type="button"
-            className="relative w-10 h-10 rounded-xl bg-[#ff5b5b]/15 text-[#ff5b5b] flex items-center justify-center hover:bg-[#ff5b5b]/25 transition"
+            onClick={() => navigate('/settings')}
+            title="Admin Settings"
+            className="relative w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-[#ff5b5b]/15 text-[#ff5b5b] flex items-center justify-center hover:bg-[#ff5b5b]/25 transition"
           >
             <Settings className="w-4 h-4" />
-            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#ff5b5b] text-white text-[10px] font-bold flex items-center justify-center border-2 border-[#f3f2f7]">
-              19
-            </span>
           </button>
         </div>
 
-        <div className="h-7 w-px bg-gray-200 hidden md:block mx-1" />
+        <div className="h-6 w-px bg-gray-200 hidden md:block mx-0.5" />
 
-        {/* Greeting & Avatar */}
-        <div className="flex items-center gap-3">
-          <span className="text-xs sm:text-sm text-gray-600">
+        {/* Greeting & Avatar - always on the right, never wraps */}
+        <button
+          type="button"
+          onClick={() => navigate('/settings')}
+          className="flex items-center gap-2.5 shrink-0 hover:opacity-90 transition"
+        >
+          <span className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">
             Hello, <strong className="font-bold text-gray-900">{admin?.name || 'Admin'}</strong>
           </span>
-          <div className="w-10 h-10 rounded-full bg-[#00b074] text-white font-bold text-sm flex items-center justify-center ring-2 ring-white shadow-xs">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#00b074] text-white font-bold text-sm flex items-center justify-center ring-2 ring-white shadow-xs shrink-0">
             {admin?.initial || 'F'}
           </div>
-        </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={handleLogout}
+          title="Log Out"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 px-3 py-2 text-xs font-extrabold transition shrink-0"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          <span>Log Out</span>
+        </button>
       </div>
     </header>
   );
 }
-

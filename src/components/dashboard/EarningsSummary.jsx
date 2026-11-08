@@ -5,11 +5,19 @@ import { formatCurrency } from '../../utils/formatters';
 const tabs = ['Today', 'This Week', 'This Month'];
 
 export default function EarningsSummary({
-  today = 820,
-  week = 3210,
-  month = 12750,
+  today = 0,
+  week = 0,
+  month = 0,
+  selectedPeriod,
+  onSelectPeriod,
 }) {
-  const [activeTab, setActiveTab] = useState('Today');
+  const [internalTab, setInternalTab] = useState('Today');
+  const activeTab = selectedPeriod || internalTab;
+
+  function handleTabChange(tab) {
+    setInternalTab(tab);
+    onSelectPeriod?.(tab);
+  }
 
   const items = [
     { label: 'Today', amount: today, icon: TrendingUp },
@@ -24,7 +32,7 @@ export default function EarningsSummary({
           <button
             key={tab}
             type="button"
-            onClick={() => setActiveTab(tab)}
+            onClick={() => handleTabChange(tab)}
             className={`rounded-full py-1.5 text-xs font-semibold transition ${
               activeTab === tab
                 ? 'bg-[#0e9f47] text-white shadow-sm'
@@ -37,15 +45,32 @@ export default function EarningsSummary({
       </div>
 
       <div className="grid grid-cols-3 divide-x divide-gray-100 py-2 text-center">
-        {items.map(({ label, amount, icon: Icon }) => (
-          <div key={label} className="px-2 flex flex-col items-center">
-            <p className="text-sm font-bold text-gray-900">{formatCurrency(amount)}</p>
-            <span className="text-[11px] text-gray-500 mt-0.5">Earnings</span>
-            <Icon className="w-4 h-4 text-[#0e9f47] mt-1.5" />
-          </div>
-        ))}
+        {items.map(({ label, amount, icon: Icon }) => {
+          const isSelected = activeTab === label;
+          return (
+            <button
+              key={label}
+              type="button"
+              onClick={() => handleTabChange(label)}
+              className={`px-1.5 py-1.5 rounded-xl flex flex-col items-center transition ${
+                isSelected ? 'bg-[#eaf7ef]/70' : 'hover:bg-gray-50'
+              }`}
+            >
+              <p
+                className={`text-xs sm:text-sm font-extrabold ${
+                  isSelected ? 'text-[#0e9f47]' : 'text-gray-900'
+                }`}
+              >
+                {formatCurrency(amount)}
+              </p>
+              <span className="text-[10px] sm:text-[11px] text-gray-500 mt-0.5">
+                Earnings
+              </span>
+              <Icon className="w-4 h-4 text-[#0e9f47] mt-1" />
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 }
-

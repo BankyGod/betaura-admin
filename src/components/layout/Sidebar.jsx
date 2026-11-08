@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Home,
   ListOrdered,
@@ -13,28 +13,50 @@ import {
   MessageSquare,
   Wallet,
   Crown,
+  Sparkles,
+  ShieldCheck,
+  LogOut,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const navItems = [
-  { to: '/', label: 'Dashboard', icon: Home, end: true },
-  { to: '/orders', label: 'Bet Tickets', icon: ListOrdered },
-  { to: '/order-detail', label: 'Ticket Detail', icon: FileText },
-  { to: '/customers', label: 'Customers', icon: Users },
-  { to: '/analytics', label: 'Analytics', icon: BarChart2 },
-  { to: '/referrals', label: 'Referrals', icon: Star },
-  { to: '/fixtures', label: 'Fixtures & Odds', icon: Trophy },
-  { to: '/trading', label: 'Trading Desk', icon: Sliders },
-  { to: '/customer-detail', label: 'KYC & Players', icon: UserCheck },
-  { to: '/audit-logs', label: 'Audit Logs', icon: Calendar },
-  { to: '/live-sync', label: 'Live Feed Sync', icon: MessageSquare },
-  { to: '/wallet', label: 'Wallet & Payouts', icon: Wallet },
+  { to: '/', label: 'Dashboard', icon: Home, end: true, perm: 'view_dashboard' },
+  { to: '/custom-games', label: 'Create & Mix Games', icon: Sparkles, perm: ['create_games', 'mix_booking'] },
+  { to: '/orders', label: 'Bet Tickets (Won/Lost)', icon: ListOrdered, perm: 'override_tickets' },
+  { to: '/order-detail', label: 'Ticket Detail', icon: FileText, perm: 'override_tickets' },
+  { to: '/customers', label: 'Customers & Tiers', icon: Users, perm: 'manage_users' },
+  { to: '/sub-admins', label: 'Sub-Admins & Roles', icon: ShieldCheck, perm: 'manage_subadmins' },
+  { to: '/analytics', label: 'Analytics', icon: BarChart2, perm: 'view_analytics' },
+  { to: '/referrals', label: 'Referrals', icon: Star, perm: 'view_dashboard' },
+  { to: '/fixtures', label: 'Fixtures & Odds', icon: Trophy, perm: 'manage_trading' },
+  { to: '/trading', label: 'Trading Desk', icon: Sliders, perm: 'manage_trading' },
+  { to: '/customer-detail', label: 'KYC & Players', icon: UserCheck, perm: 'manage_users' },
+  { to: '/audit-logs', label: 'Audit Logs', icon: Calendar, perm: 'view_dashboard' },
+  { to: '/live-sync', label: 'Live Feed Sync', icon: MessageSquare, perm: 'manage_trading' },
+  { to: '/wallet', label: 'Wallet & Payouts', icon: Wallet, perm: 'manage_wallet' },
 ];
 
 export default function Sidebar({ onQuickAction }) {
+  const { admin, hasPermission, logoutAdmin } = useAuth();
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    logoutAdmin();
+    navigate('/login');
+  }
+
+  const visibleNavItems = navItems.filter((item) => {
+    if (!item.perm) return true;
+    if (Array.isArray(item.perm)) {
+      return item.perm.some((p) => hasPermission(p));
+    }
+    return hasPermission(item.perm);
+  });
+
   return (
     <aside className="hidden lg:flex lg:flex-col w-64 bg-white border-r border-gray-100 shrink-0 min-h-screen select-none">
       {/* Brand Header (Sedap style) */}
-      <div className="px-7 pt-7 pb-5">
+      <div className="px-7 pt-7 pb-4">
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-xl bg-[#00b074] flex items-center justify-center text-white shadow-sm">
             <Crown className="w-5 h-5 fill-white" />
@@ -44,7 +66,7 @@ export default function Sidebar({ onQuickAction }) {
               BetAura<span className="text-[#00b074]">.</span>
             </h1>
             <p className="text-[11px] text-gray-400 font-medium mt-1">
-              Modern Admin Dashboard
+              {admin?.roleTitle || 'Super Administrator'}
             </p>
           </div>
         </div>
@@ -52,7 +74,7 @@ export default function Sidebar({ onQuickAction }) {
 
       {/* Navigation Links */}
       <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
-        {navItems.map(({ to, label, icon: Icon, end }) => (
+        {visibleNavItems.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
@@ -82,8 +104,17 @@ export default function Sidebar({ onQuickAction }) {
         ))}
       </nav>
 
-      {/* Bottom Green Promotional CTA Card (Sedap style) */}
-      <div className="p-5">
+      {/* Bottom Green Promotional CTA Card (Sedap style) + Log Out */}
+      <div className="p-5 space-y-3">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2.5 text-xs font-extrabold transition"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Log Out ({admin?.name || 'Admin'})</span>
+        </button>
+
         <div className="relative overflow-hidden rounded-2xl bg-[#00b074] p-4 text-white shadow-md">
           <div className="relative z-10 max-w-[140px]">
             <p className="text-[11px] leading-relaxed text-white/90 font-medium">

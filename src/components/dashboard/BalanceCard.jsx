@@ -2,7 +2,13 @@ import { useState } from 'react';
 import { Eye, EyeOff, TrendingUp, ChevronRight, Crown } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
-export default function BalanceCard({ totalBalance = 5420, todayGain = 820, onWithdraw }) {
+export default function BalanceCard({
+  totalBalance = 0,
+  todayGain = 0,
+  label = 'Total Balance',
+  subLabel = 'Today',
+  onWithdraw,
+}) {
   const [hidden, setHidden] = useState(false);
 
   return (
@@ -10,7 +16,7 @@ export default function BalanceCard({ totalBalance = 5420, todayGain = 820, onWi
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm text-white/90 font-medium">
-            <span>Total Balance</span>
+            <span>{label}</span>
             <button
               type="button"
               onClick={() => setHidden(!hidden)}
@@ -38,11 +44,10 @@ export default function BalanceCard({ totalBalance = 5420, todayGain = 820, onWi
       <div className="mt-4 pt-3 border-t border-white/15 flex items-center gap-1.5 text-xs text-white/90">
         <TrendingUp className="w-4 h-4 text-emerald-200" />
         <span className="font-semibold">+{formatCurrency(todayGain)}</span>
-        <span className="text-white/80">Today</span>
+        <span className="text-white/80">{subLabel}</span>
       </div>
 
       <Crown className="w-24 h-24 text-white/10 fill-white/10 absolute -bottom-3 right-3 pointer-events-none" />
     </div>
   );
 }
-

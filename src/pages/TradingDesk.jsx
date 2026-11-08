@@ -1,30 +1,42 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { adminApi } from '../api/endpoints';
 
 export default function TradingDesk() {
+  const [searchParams] = useSearchParams();
+  const initialFixtureId = searchParams.get('fixture_id') || '';
+
   const [suspendForm, setSuspendForm] = useState({
-    fixture_id: '',
+    fixture_id: initialFixtureId,
     market_name: '1X2',
     reason: 'Trader adjustment',
   });
   const [oddsForm, setOddsForm] = useState({
-    fixture_id: '',
+    fixture_id: initialFixtureId,
     market_name: '1X2',
     outcome_name: 'Home',
     new_odds: '2.10',
     reason: 'Risk balance',
   });
   const [settleForm, setSettleForm] = useState({
-    fixture_id: '',
+    fixture_id: initialFixtureId,
     final_home_score: 0,
     final_away_score: 0,
     is_abandoned: false,
   });
   const [statusMsg, setStatusMsg] = useState('');
 
+  useEffect(() => {
+    if (initialFixtureId) {
+      setSuspendForm((prev) => ({ ...prev, fixture_id: initialFixtureId }));
+      setOddsForm((prev) => ({ ...prev, fixture_id: initialFixtureId }));
+      setSettleForm((prev) => ({ ...prev, fixture_id: initialFixtureId }));
+    }
+  }, [initialFixtureId]);
+
   async function handleSuspend(action) {
     try {
-      setStatusMsg('Processing...');
+      setStatusMsg('Processing market lock...');
       const fn =
         action === 'suspend' ? adminApi.suspendMarket : adminApi.unsuspendMarket;
       const res = await fn(suspendForm);
@@ -66,9 +78,11 @@ export default function TradingDesk() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-extrabold text-gray-900">Trading Console & Settlement</h2>
+        <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900">
+          Trading Console & Settlement
+        </h2>
         <p className="text-xs text-gray-400 mt-0.5">
-          Suspend markets, override live odds, and trigger match settlement on BetAura API
+          Wired to /api/v1/admin/trading/* and /api/v1/admin/settlement/settle-match
         </p>
       </div>
 
@@ -80,7 +94,7 @@ export default function TradingDesk() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Market Suspension */}
-        <div className="bg-white rounded-2xl p-6 shadow-xs border border-gray-50 space-y-3">
+        <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-xs border border-gray-100 space-y-3">
           <h3 className="text-base font-bold text-gray-900">Market Suspension</h3>
           <input
             type="text"
@@ -117,7 +131,7 @@ export default function TradingDesk() {
         {/* Override Odds */}
         <form
           onSubmit={handleOverrideOdds}
-          className="bg-white rounded-2xl p-6 shadow-xs border border-gray-50 space-y-3"
+          className="bg-white rounded-2xl p-5 sm:p-6 shadow-xs border border-gray-100 space-y-3"
         >
           <h3 className="text-base font-bold text-gray-900">Emergency Odds Override</h3>
           <input
@@ -162,7 +176,7 @@ export default function TradingDesk() {
         {/* Settle Match */}
         <form
           onSubmit={handleSettle}
-          className="bg-white rounded-2xl p-6 shadow-xs border border-gray-50 space-y-3"
+          className="bg-white rounded-2xl p-5 sm:p-6 shadow-xs border border-gray-100 space-y-3"
         >
           <h3 className="text-base font-bold text-gray-900">Settle Match</h3>
           <input
@@ -203,4 +217,3 @@ export default function TradingDesk() {
     </div>
   );
 }
-

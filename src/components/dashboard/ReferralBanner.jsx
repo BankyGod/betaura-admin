@@ -1,7 +1,7 @@
 import { Users, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-export default function ReferralBanner({ count = 87 }) {
+export default function ReferralBanner({ count = 0 }) {
   const navigate = useNavigate();
 
   return (
