@@ -126,6 +126,8 @@ export const adminApi = {
       `/api/v1/admin/support/threads/${encodeURIComponent(threadId)}/reply`,
       payload
     ),
+  deleteSupportThread: (threadId) =>
+    apiClient.delete(`/api/v1/admin/support/threads/${encodeURIComponent(threadId)}`),
   sendSupportMessage: (payload) =>
     apiClient.post('/api/v1/admin/support/messages', payload),
 };

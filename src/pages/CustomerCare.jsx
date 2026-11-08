@@ -9,6 +9,7 @@ import {
   CheckCheck,
   Phone,
   Lock,
+  Trash2,
 } from 'lucide-react';
 import { adminApi } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
@@ -72,6 +73,21 @@ export default function CustomerCare() {
       }
     } catch {
       // keep local activeThread
+    }
+  }
+
+  async function handleDeleteThread(e, threadId) {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this customer conversation?')) return;
+    try {
+      await adminApi.deleteSupportThread(threadId);
+      setThreads((prev) => prev.filter((t) => t.thread_id !== threadId));
+      if (selectedThreadId === threadId) {
+        setSelectedThreadId(null);
+        setActiveThread(null);
+      }
+    } catch (err) {
+      console.error('Failed to delete thread:', err);
     }
   }
 
@@ -224,9 +240,19 @@ export default function CustomerCare() {
                             {unread} new
                           </span>
                         ) : (
-                          <span className="text-[10px] text-gray-400 shrink-0">
-                            {t.status === 'REPLIED' ? 'Replied' : 'Open'}
-                          </span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-gray-400 shrink-0">
+                              {t.status === 'REPLIED' ? 'Replied' : 'Open'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => handleDeleteThread(e, t.thread_id)}
+                              title="Delete Conversation"
+                              className="p-1 text-gray-300 hover:text-red-500 rounded hover:bg-red-50 transition"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
                         )}
                       </div>
                       {t.phone && (
@@ -287,15 +313,25 @@ export default function CustomerCare() {
                   </div>
                 </div>
 
-                <span
-                  className={`px-3 py-1 rounded-full text-[10px] font-extrabold uppercase ${
-                    activeThread.status === 'REPLIED'
-                      ? 'bg-[#d9f3ea] text-[#00b074]'
-                      : 'bg-amber-100 text-amber-800'
-                  }`}
-                >
-                  {activeThread.status || 'OPEN'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-3 py-1 rounded-full text-[10px] font-extrabold uppercase ${
+                      activeThread.status === 'REPLIED'
+                        ? 'bg-[#d9f3ea] text-[#00b074]'
+                        : 'bg-amber-100 text-amber-800'
+                    }`}
+                  >
+                    {activeThread.status || 'OPEN'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => handleDeleteThread(e, activeThread.thread_id)}
+                    title="Delete Conversation"
+                    className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Messages Stream */}

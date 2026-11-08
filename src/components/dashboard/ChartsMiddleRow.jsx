@@ -106,7 +106,7 @@ export default function ChartsMiddleRow({ dashboardData, onRefresh }) {
   const pieLabels = apiPie?.labels || (
     isSuperAdmin
       ? ['Won Bets Rate', 'Customer Growth', 'Monthly Revenue Share']
-      : ['Invite Conversion', 'Referral Growth', '50% Bonus Rate']
+      : ['Invite Conversion', 'Referral Growth', '70% Commission Rate']
   );
 
   // Build real 7-day series from API analytics or real bets/referrals

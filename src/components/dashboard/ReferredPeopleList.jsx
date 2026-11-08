@@ -43,7 +43,7 @@ export default function ReferredPeopleList({
                 : `Referred Players & Referral Commissions (${referredPeople.length || totalInvited})`}
             </h3>
             <p className="text-[11px] text-gray-400">
-              50% commission on invitee&apos;s first deposit — credited directly to your referral earnings
+              70% commission on invitee&apos;s first deposit — credited directly to your referral earnings
             </p>
           </div>
         </div>
@@ -120,7 +120,7 @@ export default function ReferredPeopleList({
             No referred players recorded under code {referralCode} yet
           </p>
           <p className="text-[11px] text-gray-500 max-w-md mx-auto">
-            Share your invite code <strong>{referralCode}</strong> or link above. Every player who registers with your code will appear here along with your 50% first-deposit referral earnings!
+            Share your invite code <strong>{referralCode}</strong> or link above. Every player who registers with your code will appear here along with your 70% first-deposit referral earnings!
           </p>
         </div>
       ) : (
