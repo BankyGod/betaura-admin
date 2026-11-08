@@ -69,6 +69,8 @@ export const adminApi = {
       `/api/v1/admin/users/${encodeURIComponent(identifier)}/manage`,
       payload
     ),
+  deleteUser: (identifier) =>
+    apiClient.delete(`/api/v1/admin/users/${encodeURIComponent(identifier)}`),
   getAdminBets: (limit = 200) =>
     apiClient.get('/api/v1/admin/bets', { params: { limit } }),
   markTicketWon: (ticketIdentifier, payload = { status: 'WON' }) =>

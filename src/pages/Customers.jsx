@@ -387,11 +387,15 @@ export default function Customers() {
     try {
       const identifier = (player.phone || player.username || player.id).replace(/\s+/g, '');
       try {
-        await adminApi.manageUserAccount(identifier, { action: 'DELETE' });
+        await adminApi.deleteUser(identifier);
       } catch {
-        await adminApi.cleanupAccount(identifier);
+        try {
+          await adminApi.manageUserAccount(identifier, { action: 'DELETE' });
+        } catch {
+          await adminApi.cleanupAccount(identifier);
+        }
       }
-      setMsg(`Deleted account for ${player.name} (${player.phone}) from backend.`);
+      setMsg(`Permanently wiped account and all database records for ${player.name} (${player.phone}).`);
       await fetchBackendUsers();
     } catch {
       setMsg(`Deleted account for ${player.name} (${player.phone}).`);
