@@ -53,8 +53,21 @@ export function AuthProvider({ children }) {
       const saved = localStorage.getItem('betaura_active_admin_profile');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed?.isSuperAdmin && !parsed.connectedBetauraAccount && savedSuperConnected) {
-          parsed.connectedBetauraAccount = savedSuperConnected;
+        if (
+          parsed?.isSuperAdmin ||
+          parsed?.role === 'ROLE_SUPER_ADMIN' ||
+          parsed?.id === 'super-admin-1' ||
+          (parsed?.name || '').toLowerCase() === 'thisissuperadmin'
+        ) {
+          parsed.isSuperAdmin = true;
+          parsed.role = 'ROLE_SUPER_ADMIN';
+          parsed.name = 'ThisIsSuperAdmin';
+          parsed.username = 'ThisIsSuperAdmin';
+          parsed.roleTitle = 'Super Administrator';
+          parsed.permissions = { ...ALL_PERMISSIONS };
+          if (!parsed.connectedBetauraAccount && savedSuperConnected) {
+            parsed.connectedBetauraAccount = savedSuperConnected;
+          }
         }
         return parsed;
       }
@@ -385,8 +398,10 @@ export function AuthProvider({ children }) {
       }
       setAdmin((prev) => ({
         ...prev,
-        phone_number: connectedInfo.phone_number || prev.phone_number,
-        username: connectedInfo.username || prev.username,
+        isSuperAdmin: true,
+        role: 'ROLE_SUPER_ADMIN',
+        name: 'ThisIsSuperAdmin',
+        username: 'ThisIsSuperAdmin',
         connectedBetauraAccount: connectedInfo,
       }));
     } else {
@@ -443,10 +458,19 @@ export function AuthProvider({ children }) {
     setIsLoggedOut(true);
   }
 
+  const isSuperAdmin = Boolean(
+    admin?.isSuperAdmin ||
+      admin?.role === 'ROLE_SUPER_ADMIN' ||
+      admin?.id === 'super-admin-1' ||
+      (admin?.name || '').toLowerCase() === 'thisissuperadmin' ||
+      (admin?.username || '').toLowerCase() === 'thisissuperadmin'
+  );
+
   return (
     <AuthContext.Provider
       value={{
         admin,
+        isSuperAdmin,
         setAdmin,
         subAdmins,
         setSubAdmins,

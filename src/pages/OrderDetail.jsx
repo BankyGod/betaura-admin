@@ -102,10 +102,10 @@ export default function OrderDetail() {
         Number(ticket.potential_payout) ||
         Number(ticket.stake || 100) * Number(ticket.total_odds || 2);
 
+      let wonRes = null;
       try {
-        await adminApi.markTicketWon(ticket.ticket_number, {
+        wonRes = await adminApi.markTicketWon(ticket.ticket_number, {
           status: 'WON',
-          settled_payout: payoutVal,
         });
       } catch {
         await adminApi.syncTicket({
@@ -123,14 +123,27 @@ export default function OrderDetail() {
         });
       }
 
-      const updatedSelections = (ticket.selections || []).map((s) => ({
-        ...s,
-        status: 'WON',
-      }));
+      const corrections = wonRes?.data?.corrected_selections || [];
+      const updatedSelections = (ticket.selections || []).map((s) => {
+        const fix = corrections.find(
+          (c) =>
+            c.fixture_id === s.fixture_id &&
+            (c.from || '').toLowerCase() === (s.outcome_name || '').toLowerCase()
+        );
+        return {
+          ...s,
+          ...(fix ? { outcome_name: fix.to, odds_at_stake: fix.new_odds } : {}),
+          status: 'WON',
+        };
+      });
+      const finalPayout = Number(wonRes?.data?.settled_payout) || payoutVal;
       setTicket({
         ...ticket,
         status: 'WON',
-        settled_payout: payoutVal,
+        settled_payout: finalPayout,
+        ...(wonRes?.data?.total_odds
+          ? { total_odds: wonRes.data.total_odds, potential_payout: finalPayout }
+          : {}),
         selections: updatedSelections,
       });
 

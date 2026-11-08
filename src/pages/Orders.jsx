@@ -138,7 +138,6 @@ export default function Orders() {
       try {
         await adminApi.markTicketWon(ticket.id, {
           status: 'WON',
-          settled_payout: ticket.payout,
         });
       } catch {
         await adminApi.syncTicket({

@@ -1,11 +1,38 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Bell, MessageSquare, Gift, Settings, Link2, CheckCircle2, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { adminApi } from '../../api/endpoints';
 
 export default function Topbar({ searchQuery, onSearchChange }) {
-  const { admin, setConnectModalOpen, logoutAdmin } = useAuth();
+  const { admin, isSuperAdmin, setConnectModalOpen, logoutAdmin } = useAuth();
   const navigate = useNavigate();
   const connectedAcc = admin?.connectedBetauraAccount;
+  const [supportUnread, setSupportUnread] = useState(0);
+
+  // Live unread customer-care count (Super Admin only)
+  useEffect(() => {
+    if (!isSuperAdmin) return undefined;
+    let active = true;
+    const load = async () => {
+      try {
+        const res = await adminApi.getSupportThreads();
+        if (active && Array.isArray(res.data)) {
+          setSupportUnread(
+            res.data.reduce((sum, t) => sum + Number(t.unread_count || 0), 0)
+          );
+        }
+      } catch {
+        // ignore transient errors
+      }
+    };
+    load();
+    const id = setInterval(load, 5000);
+    return () => {
+      active = false;
+      clearInterval(id);
+    };
+  }, [isSuperAdmin]);
 
   function handleLogout() {
     logoutAdmin();
@@ -80,14 +107,21 @@ export default function Topbar({ searchQuery, onSearchChange }) {
             <Bell className="w-4 h-4" />
           </button>
 
-          <button
-            type="button"
-            onClick={() => navigate('/live-sync')}
-            title="Live Feed Sync"
-            className="relative w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-[#2d9cdb]/15 text-[#2d9cdb] flex items-center justify-center hover:bg-[#2d9cdb]/25 transition"
-          >
-            <MessageSquare className="w-4 h-4" />
-          </button>
+          {isSuperAdmin && (
+            <button
+              type="button"
+              onClick={() => navigate('/customer-care')}
+              title="Customer Care Inbox (Super Admin Only)"
+              className="relative w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-[#2d9cdb]/15 text-[#2d9cdb] flex items-center justify-center hover:bg-[#2d9cdb]/25 transition"
+            >
+              <MessageSquare className="w-4 h-4" />
+              {supportUnread > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#ff5b5b] text-white text-[10px] font-extrabold flex items-center justify-center ring-2 ring-[#f3f2f7]">
+                  {supportUnread > 99 ? '99+' : supportUnread}
+                </span>
+              )}
+            </button>
+          )}
 
           <button
             type="button"

@@ -31,8 +31,9 @@ const navItems = [
   { to: '/fixtures', label: 'Fixtures & Odds', icon: Trophy, perm: 'manage_trading' },
   { to: '/trading', label: 'Trading Desk', icon: Sliders, perm: 'manage_trading' },
   { to: '/customer-detail', label: 'KYC & Players', icon: UserCheck, perm: 'manage_users' },
+  { to: '/customer-care', label: 'Customer Care', icon: MessageSquare, perm: 'manage_subadmins' },
   { to: '/audit-logs', label: 'Audit Logs', icon: Calendar, perm: 'view_dashboard' },
-  { to: '/live-sync', label: 'Live Feed Sync', icon: MessageSquare, perm: 'manage_trading' },
+  { to: '/live-sync', label: 'Live Feed Sync', icon: Trophy, perm: 'manage_trading' },
   { to: '/wallet', label: 'Wallet & Payouts', icon: Wallet, perm: 'manage_wallet' },
 ];
 

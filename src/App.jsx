@@ -11,6 +11,7 @@ import Fixtures from './pages/Fixtures';
 import TradingDesk from './pages/TradingDesk';
 import AuditLogs from './pages/AuditLogs';
 import LiveSync from './pages/LiveSync';
+import CustomerCare from './pages/CustomerCare';
 import WalletPage from './pages/WalletPage';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
@@ -36,6 +37,7 @@ export default function App() {
             <Route path="/trading" element={<TradingDesk />} />
             <Route path="/customer-detail" element={<CustomerDetail />} />
             <Route path="/audit-logs" element={<AuditLogs />} />
+            <Route path="/customer-care" element={<CustomerCare />} />
             <Route path="/live-sync" element={<LiveSync />} />
             <Route path="/wallet" element={<WalletPage />} />
             <Route path="/settings" element={<Settings />} />

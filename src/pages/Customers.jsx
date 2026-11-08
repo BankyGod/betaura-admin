@@ -7,6 +7,9 @@ import {
   UserPlus,
   RefreshCw,
   Search,
+  X,
+  UserCheck,
+  Link2,
 } from 'lucide-react';
 import { adminApi } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
@@ -20,7 +23,7 @@ const LEVEL_LABELS = {
 };
 
 export default function Customers() {
-  const { hasPermission } = useAuth();
+  const { admin, hasPermission, subAdmins } = useAuth();
   const canManage = hasPermission('manage_users');
 
   const [customers, setCustomers] = useState([]);
@@ -29,6 +32,110 @@ export default function Customers() {
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [msg, setMsg] = useState('');
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
+
+  const resolveReferrer = useCallback(
+    (u, allUsers = []) => {
+      const rawCode = (u.referred_by || u.referredBy || '').trim();
+      if (!rawCode) {
+        return {
+          isDirect: true,
+          sourceLabel: 'Direct',
+          code: null,
+          subAdmin: null,
+        };
+      }
+
+      // 1. Check backend-resolved referred_by_sub_admin if provided
+      if (u.referred_by_sub_admin && u.referred_by_sub_admin.name) {
+        return {
+          isDirect: false,
+          sourceLabel: u.referral_source || u.referred_by_sub_admin.name,
+          code: rawCode,
+          subAdmin: u.referred_by_sub_admin,
+        };
+      }
+
+      const codeUpper = rawCode.toUpperCase();
+
+      // 2. Match against Sub-Admins from AuthContext
+      if (Array.isArray(subAdmins) && subAdmins.length > 0) {
+        const matchedSa = subAdmins.find((sa) => {
+          const saCode = (sa.referral_code || sa.referralCode || '').trim().toUpperCase();
+          const saUname = (sa.username || '').trim().toUpperCase();
+          const saName = (sa.name || '').trim().toUpperCase();
+          const saPhone = (sa.phone || sa.phone_number || '').trim().toUpperCase();
+          const conn = sa.connectedBetauraAccount || sa.connected_betaura_account;
+          const connCode = (conn?.referral_code || '').trim().toUpperCase();
+          const connUname = (conn?.username || '').trim().toUpperCase();
+          return (
+            (saCode && saCode === codeUpper) ||
+            (connCode && connCode === codeUpper) ||
+            (saUname && (saUname === codeUpper || `AURA-${saUname}` === codeUpper)) ||
+            (connUname && (connUname === codeUpper || `AURA-${connUname}` === codeUpper)) ||
+            (saName && saName === codeUpper) ||
+            (saPhone && saPhone === codeUpper)
+          );
+        });
+
+        if (matchedSa) {
+          return {
+            isDirect: false,
+            sourceLabel: matchedSa.username
+              ? `${matchedSa.name} (@${matchedSa.username})`
+              : matchedSa.name,
+            code: rawCode,
+            subAdmin: {
+              id: matchedSa.id,
+              name: matchedSa.name,
+              username: matchedSa.username || '',
+              phone: matchedSa.phone || matchedSa.phone_number || '',
+              roleTitle: matchedSa.roleTitle || 'Sub-Admin',
+              referral_code: matchedSa.referral_code || rawCode,
+            },
+          };
+        }
+      }
+
+      // 3. Match against other users' referral codes or usernames
+      const matchedUser = allUsers.find((other) => {
+        const oCode = (other.referral_code || '').trim().toUpperCase();
+        const oUname = (other.username || '').trim().toUpperCase();
+        return (oCode && oCode === codeUpper) || (oUname && oUname === codeUpper);
+      });
+
+      if (matchedUser) {
+        return {
+          isDirect: false,
+          sourceLabel: `${matchedUser.username || matchedUser.name || matchedUser.phone} (${rawCode})`,
+          code: rawCode,
+          subAdmin: {
+            id: matchedUser.id,
+            name: matchedUser.username || matchedUser.name || matchedUser.phone,
+            username: matchedUser.username || '',
+            phone: matchedUser.phone || matchedUser.phone_number || '',
+            roleTitle: 'Referrer',
+            referral_code: rawCode,
+          },
+        };
+      }
+
+      return {
+        isDirect: false,
+        sourceLabel: u.referral_source && u.referral_source !== 'Direct' ? u.referral_source : `Sub-Admin (${rawCode})`,
+        code: rawCode,
+        subAdmin: {
+          id: null,
+          name: `Sub-Admin (${rawCode})`,
+          username: rawCode,
+          phone: '',
+          roleTitle: 'Sub-Admin Referral',
+          referral_code: rawCode,
+        },
+      };
+    },
+    [subAdmins]
+  );
 
   const fetchBackendUsers = useCallback(async () => {
     try {
@@ -38,8 +145,28 @@ export default function Customers() {
 
       const res = await adminApi.getAdminUsers(500);
       if (Array.isArray(res.data)) {
-        const mapped = res.data.map((u) => {
+        const filteredRaw = res.data.filter((u) => {
+          const uname = (u.username || u.name || '').toLowerCase();
+          const ph = (u.phone || u.phone_number || '').trim();
+          const role = (u.role || 'ROLE_PUNTER').toUpperCase();
+          if (role === 'ROLE_SUPER_ADMIN') return false;
+          if (
+            uname === 'thisissuperadmin' ||
+            uname === 'profitkingssuperadmin' ||
+            uname === 'superadmin' ||
+            uname === 'super admin'
+          ) {
+            return false;
+          }
+          if (ph === '+233540000001' || ph === '+233240000001') {
+            return false;
+          }
+          return true;
+        });
+
+        const mapped = filteredRaw.map((u) => {
           const tier = Number(u.tier || u.kyc_tier || 1);
+          const refInfo = resolveReferrer(u, filteredRaw);
           return {
             id: u.id,
             name: u.username || u.name || u.phone || 'Player',
@@ -50,6 +177,9 @@ export default function Customers() {
             levelName: u.levelName || LEVEL_LABELS[tier] || `Level ${tier}`,
             status: u.status || 'VERIFIED',
             role: u.role || 'ROLE_PUNTER',
+            referralCode: u.referral_code || '',
+            referredBy: u.referred_by || null,
+            referralInfo: refInfo,
             referred: Number(u.referred || 0),
             betsCount: Number(u.bets_count || 0),
             balance: Number(u.balance || 0),
@@ -59,35 +189,79 @@ export default function Customers() {
         });
         setCustomers(mapped);
       }
-    } catch (err) {
-      // Fallback: if /api/v1/admin/users isn't deployed yet, at least show current authenticated profile
-      try {
-        const me = await adminApi.getProfile();
-        if (me?.data) {
-          const u = me.data;
-          const tier = Number(u.kyc_tier || 1);
-          setCustomers([
-            {
-              id: u.id,
-              name: u.username || u.phone_number || 'Player',
-              username: u.username || '',
-              phone: u.phone_number || '',
-              tier,
-              levelName: LEVEL_LABELS[tier] || `Level ${tier}`,
-              status: u.status || 'VERIFIED',
-              referred: 0,
-              betsCount: 0,
-              balance: 0,
-            },
-          ]);
+    } catch {
+      // Fallback if backend is mid-deploy: surface known connected BetAura player accounts & referred users
+      const fallbackMap = new Map();
+      const conn = admin?.connectedBetauraAccount;
+      if (conn && (conn.username || conn.phone_number)) {
+        const uname = (conn.username || '').toLowerCase();
+        if (uname !== 'thisissuperadmin' && conn.phone_number !== '+233540000001') {
+          const refInfo = resolveReferrer(conn, []);
+          fallbackMap.set(conn.user_id || conn.phone_number, {
+            id: conn.user_id || conn.phone_number,
+            name: conn.username || conn.phone_number,
+            username: conn.username || '',
+            phone: conn.phone_number || '',
+            email: '',
+            tier: 2,
+            levelName: LEVEL_LABELS[2],
+            status: 'KYC_APPROVED',
+            role: 'ROLE_PUNTER',
+            referralCode: conn.referral_code || '',
+            referredBy: conn.referred_by || null,
+            referralInfo: refInfo,
+            referred: Number(conn.total_invited || 0),
+            betsCount: 0,
+            balance: 0,
+            bonusBalance: Number(conn.bonus_balance || 0),
+            createdAt: conn.connected_at,
+          });
         }
-      } catch {
-        // ignore
+        if (Array.isArray(conn.referred_people)) {
+          conn.referred_people.forEach((rp) => {
+            const key = rp.id || rp.phone;
+            if (key && !fallbackMap.has(key)) {
+              const tier = Number(rp.tier || 1);
+              fallbackMap.set(key, {
+                id: key,
+                name: rp.name || rp.username || rp.phone,
+                username: rp.username || '',
+                phone: rp.phone || '',
+                email: '',
+                tier,
+                levelName: LEVEL_LABELS[tier] || `Level ${tier}`,
+                status: rp.status || 'VERIFIED',
+                role: 'ROLE_PUNTER',
+                referralCode: '',
+                referredBy: conn.referral_code || null,
+                referralInfo: {
+                  isDirect: false,
+                  sourceLabel: conn.username || conn.phone_number,
+                  code: conn.referral_code,
+                  subAdmin: {
+                    id: conn.user_id,
+                    name: conn.username || conn.phone_number,
+                    username: conn.username || '',
+                    phone: conn.phone_number || '',
+                    roleTitle: 'Referrer',
+                    referral_code: conn.referral_code || '',
+                  },
+                },
+                referred: 0,
+                betsCount: 0,
+                balance: 0,
+                bonusBalance: 0,
+                createdAt: rp.joined,
+              });
+            }
+          });
+        }
       }
+      setCustomers(Array.from(fallbackMap.values()));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [admin?.connectedBetauraAccount, resolveReferrer]);
 
   useEffect(() => {
     fetchBackendUsers();
@@ -312,10 +486,12 @@ export default function Customers() {
         ) : (
           filteredCustomers.map((c) => {
             const isSuspended = c.status === 'SUSPENDED' || c.status === 'FROZEN';
+            const isDirect = c.referralInfo?.isDirect !== false;
             return (
               <div
                 key={c.id}
-                className="bg-white rounded-2xl p-3.5 border border-gray-100 shadow-xs space-y-3"
+                onClick={() => setSelectedPlayer(c)}
+                className="bg-white rounded-2xl p-3.5 border border-gray-100 shadow-xs space-y-3 cursor-pointer hover:border-[#00b074]/40 transition"
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -323,6 +499,12 @@ export default function Customers() {
                     <p className="text-[11px] text-gray-500">{c.phone}</p>
                     <p className="text-[11px] font-bold text-[#00b074] mt-0.5">
                       Balance: {formatCurrency(c.balance)} • Bets: {c.betsCount}
+                    </p>
+                    <p className="text-[10px] font-bold text-gray-500 mt-1">
+                      Referred By:{' '}
+                      <span className={isDirect ? 'text-gray-700' : 'text-[#2d9cdb]'}>
+                        {isDirect ? 'Direct' : c.referralInfo?.sourceLabel}
+                      </span>
                     </p>
                   </div>
                   <div className="text-right">
@@ -342,7 +524,10 @@ export default function Customers() {
                 </div>
 
                 {canManage && (
-                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-100">
+                  <div
+                    className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-100"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <button
                       type="button"
                       onClick={() => handleUpgradeLevel(c)}
@@ -411,12 +596,23 @@ export default function Customers() {
                 filteredCustomers.map((c) => {
                   const isSuspended = c.status === 'SUSPENDED' || c.status === 'FROZEN';
                   return (
-                    <tr key={c.id} className="hover:bg-gray-50/60">
+                    <tr
+                      key={c.id}
+                      onClick={() => setSelectedPlayer(c)}
+                      title="Click to see which Sub-Admin referred this user"
+                      className="hover:bg-[#d9f3ea]/30 cursor-pointer transition"
+                    >
                       <td className="px-5 py-3.5">
-                        <p className="font-bold text-gray-900">{c.name}</p>
-                        {c.betsCount > 0 && (
+                        <p className="font-bold text-gray-900 hover:text-[#00b074] transition">
+                          {c.name}
+                        </p>
+                        {c.betsCount > 0 ? (
                           <span className="text-[10px] text-gray-400">
                             {c.betsCount} bet{c.betsCount === 1 ? '' : 's'} placed
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-gray-400">
+                            Click to view referrer
                           </span>
                         )}
                       </td>
@@ -439,7 +635,10 @@ export default function Customers() {
                         </span>
                       </td>
                       <td className="px-5 py-3.5 font-bold text-gray-800">{c.referred}</td>
-                      <td className="px-5 py-3.5 text-right">
+                      <td
+                        className="px-5 py-3.5 text-right"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {canManage && (
                           <div className="inline-flex items-center gap-2">
                             <button
@@ -492,6 +691,157 @@ export default function Customers() {
           </table>
         </div>
       </div>
+
+      {/* Player Referral Attribution Modal (Opens when Super Admin clicks on a user) */}
+      {selectedPlayer && (
+        <div
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={() => setSelectedPlayer(null)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-[#d9f3ea] text-[#00b074] flex items-center justify-center font-extrabold text-base">
+                  {(selectedPlayer.name || 'P')[0].toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-gray-900">
+                    {selectedPlayer.name}
+                  </h3>
+                  <p className="text-xs text-gray-500">{selectedPlayer.phone}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedPlayer(null)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Referred By / Sub-Admin Attribution Box */}
+            <div
+              className={`rounded-2xl p-4 border ${
+                selectedPlayer.referralInfo?.isDirect !== false
+                  ? 'bg-gray-50 border-gray-200'
+                  : 'bg-[#d9f3ea]/40 border-[#00b074]/30'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+                  Referred By (Sub-Admin)
+                </span>
+                <span
+                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
+                    selectedPlayer.referralInfo?.isDirect !== false
+                      ? 'bg-gray-200 text-gray-700'
+                      : 'bg-[#00b074] text-white'
+                  }`}
+                >
+                  {selectedPlayer.referralInfo?.isDirect !== false
+                    ? 'Direct'
+                    : 'Sub-Admin Referral'}
+                </span>
+              </div>
+
+              {selectedPlayer.referralInfo?.isDirect !== false ? (
+                <div className="flex items-center gap-2.5 mt-2">
+                  <UserCheck className="w-5 h-5 text-gray-500 shrink-0" />
+                  <div>
+                    <p className="text-sm font-extrabold text-gray-900">Direct</p>
+                    <p className="text-[11px] text-gray-500">
+                      This user signed up directly on BetAura without any referral code.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2 mt-2">
+                  <div className="flex items-center gap-2.5">
+                    <Link2 className="w-5 h-5 text-[#00b074] shrink-0" />
+                    <div>
+                      <p className="text-sm font-extrabold text-gray-900">
+                        {selectedPlayer.referralInfo?.subAdmin?.name ||
+                          selectedPlayer.referralInfo?.sourceLabel}
+                      </p>
+                      {selectedPlayer.referralInfo?.subAdmin?.username && (
+                        <p className="text-xs font-bold text-[#00b074]">
+                          @{selectedPlayer.referralInfo.subAdmin.username}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#00b074]/20 text-[11px]">
+                    <div>
+                      <span className="text-gray-400 block">Referral Code Used</span>
+                      <span className="font-extrabold text-gray-900">
+                        {selectedPlayer.referralInfo?.code || selectedPlayer.referredBy}
+                      </span>
+                    </div>
+                    {selectedPlayer.referralInfo?.subAdmin?.phone && (
+                      <div>
+                        <span className="text-gray-400 block">Sub-Admin Phone</span>
+                        <span className="font-bold text-gray-800">
+                          {selectedPlayer.referralInfo.subAdmin.phone}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Account Summary Details */}
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="rounded-xl bg-gray-50 p-3">
+                <span className="text-[10px] text-gray-400 uppercase font-bold block">
+                  Wallet Balance
+                </span>
+                <span className="text-sm font-extrabold text-[#00b074] mt-0.5 block">
+                  {formatCurrency(selectedPlayer.balance)}
+                </span>
+              </div>
+              <div className="rounded-xl bg-gray-50 p-3">
+                <span className="text-[10px] text-gray-400 uppercase font-bold block">
+                  Account Level
+                </span>
+                <span className="text-sm font-extrabold text-[#2d9cdb] mt-0.5 block">
+                  {selectedPlayer.levelName || `Level ${selectedPlayer.tier}`}
+                </span>
+              </div>
+              <div className="rounded-xl bg-gray-50 p-3">
+                <span className="text-[10px] text-gray-400 uppercase font-bold block">
+                  Status
+                </span>
+                <span className="text-xs font-extrabold text-gray-800 mt-0.5 block">
+                  {selectedPlayer.status}
+                </span>
+              </div>
+              <div className="rounded-xl bg-gray-50 p-3">
+                <span className="text-[10px] text-gray-400 uppercase font-bold block">
+                  People Referred
+                </span>
+                <span className="text-xs font-extrabold text-gray-800 mt-0.5 block">
+                  {selectedPlayer.referred} user{selectedPlayer.referred === 1 ? '' : 's'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={() => setSelectedPlayer(null)}
+                className="rounded-xl bg-gray-900 hover:bg-gray-800 text-white px-5 py-2 text-xs font-bold transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

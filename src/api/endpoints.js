@@ -112,4 +112,20 @@ export const adminApi = {
       `/api/v1/admin/finance/withdrawals/${encodeURIComponent(transactionId)}/approve`
     ),
   getAuditLogs: () => apiClient.get('/api/v1/admin/audit-logs'),
+
+  // =========================================================================
+  // 8. Customer Care & Live Support Inbox
+  // =========================================================================
+  getSupportThreads: () => apiClient.get('/api/v1/admin/support/threads'),
+  getSupportThread: (threadId, markRead = true) =>
+    apiClient.get(
+      `/api/v1/admin/support/threads/${encodeURIComponent(threadId)}?mark_read=${markRead}`
+    ),
+  replySupportThread: (threadId, payload) =>
+    apiClient.post(
+      `/api/v1/admin/support/threads/${encodeURIComponent(threadId)}/reply`,
+      payload
+    ),
+  sendSupportMessage: (payload) =>
+    apiClient.post('/api/v1/admin/support/messages', payload),
 };
