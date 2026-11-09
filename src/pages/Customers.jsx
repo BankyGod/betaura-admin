@@ -283,7 +283,7 @@ export default function Customers() {
     );
 
     try {
-      const identifier = (player.phone || player.username || player.id).replace(/\s+/g, '');
+      const identifier = String(player.id || player.phone || player.username).trim();
       const res = await adminApi.manageUserAccount(identifier, {
         action: nextStatus === 'SUSPENDED' ? 'SUSPEND' : 'ACTIVATE',
       });
@@ -299,10 +299,11 @@ export default function Customers() {
       await fetchBackendUsers();
     } catch (err) {
       setMsg(
-        `${player.name} (${player.phone}) status set to ${nextStatus} (${
-          err.response?.data?.detail || 'Synced'
-        }).`
+        `Failed to update status for ${player.name}: ${
+          err.response?.data?.detail || err.message || 'Error'
+        }`
       );
+      await fetchBackendUsers();
     }
   }
 
