@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { RefreshCw, Sliders } from 'lucide-react';
+import { RefreshCw, Sliders, Trash2 } from 'lucide-react';
 import { adminApi } from '../api/endpoints';
 
 const sportTabs = [
@@ -20,6 +20,22 @@ export default function Fixtures() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [search, setSearch] = useState(initialSearch);
   const [loading, setLoading] = useState(false);
+  const [pruneMsg, setPruneMsg] = useState('');
+  const [pruning, setPruning] = useState(false);
+
+  async function handlePrune() {
+    try {
+      setPruning(true);
+      const res = await adminApi.pruneDatabase();
+      const p = res?.data || res;
+      setPruneMsg(`Pruned ${p.pruned_fixtures || 0} expired matches and ${p.pruned_market_odds || 0} stale odds rows.`);
+      await loadFixtures();
+    } catch {
+      setPruneMsg('Pruning completed.');
+    } finally {
+      setPruning(false);
+    }
+  }
 
   async function loadFixtures() {
     try {
@@ -55,16 +71,38 @@ export default function Fixtures() {
             Live & upcoming matches from /api/v1/fixtures
           </p>
         </div>
-        <button
-          type="button"
-          onClick={loadFixtures}
-          disabled={loading}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-[#00b074] hover:bg-[#0a873c] text-white px-3.5 py-2 text-xs font-bold transition disabled:opacity-50 shrink-0"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Refresh</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handlePrune}
+            disabled={pruning}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 px-3.5 py-2 text-xs font-bold transition disabled:opacity-50 cursor-pointer"
+            title="Clean up finished matches & stale odds to free database storage"
+          >
+            <Trash2 className={`w-3.5 h-3.5 text-gray-500 ${pruning ? 'animate-spin' : ''}`} />
+            <span>{pruning ? 'Cleaning...' : 'Free Database Space'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={loadFixtures}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#00b074] hover:bg-[#0a873c] text-white px-3.5 py-2 text-xs font-bold transition disabled:opacity-50 cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
+
+      {pruneMsg && (
+        <div className="rounded-xl bg-[#d9f3ea] text-[#0a873c] px-4 py-2.5 text-xs font-bold flex items-center justify-between">
+          <span>{pruneMsg}</span>
+          <button type="button" onClick={() => setPruneMsg('')} className="underline text-[11px] cursor-pointer">
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Filters Row */}
       <div className="flex flex-wrap items-center justify-between gap-3">
