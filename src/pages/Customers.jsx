@@ -403,6 +403,27 @@ export default function Customers() {
     }
   }
 
+  async function handlePurgeAllCustomers() {
+    if (!canManage) return;
+    if (
+      !window.confirm(
+        `Are you sure you want to PERMANENTLY DELETE ALL ${customers.length} customer account(s) and swipe their bets, transactions, and wallets from the database? This action cannot be undone. Admin accounts will NOT be deleted.`
+      )
+    ) {
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await adminApi.purgeAllPunters();
+      setMsg(res?.data?.message || res?.message || 'Successfully purged all customer accounts from database.');
+      await fetchBackendUsers();
+    } catch (err) {
+      setError(err?.response?.data?.detail || err?.message || 'Failed to purge all customer accounts.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleAddLookupPlayer(e) {
     e.preventDefault();
     if (!newPhone.trim()) return;
@@ -467,15 +488,30 @@ export default function Customers() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={fetchBackendUsers}
-          disabled={loading}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 px-3.5 py-2 text-xs font-bold text-gray-700 transition"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Refresh Backend Users</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {canManage && customers.length > 0 && (
+            <button
+              type="button"
+              onClick={handlePurgeAllCustomers}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 px-3.5 py-2 text-xs font-bold text-red-600 transition cursor-pointer"
+              title="Delete all customer accounts from database (admin accounts preserved)"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-red-500" />
+              <span>Purge All Customers ({customers.length})</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={fetchBackendUsers}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 px-3.5 py-2 text-xs font-bold text-gray-700 transition cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh Backend Users</span>
+          </button>
+        </div>
       </div>
 
       {msg && (
