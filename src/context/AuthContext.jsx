@@ -10,8 +10,19 @@ export const ALL_PERMISSIONS = {
   mix_booking: true,
   override_tickets: true,
   manage_users: true,
+  suspend_users: true,
+  delete_users: true,
+  upgrade_kyc: true,
+  customer_support: true,
   manage_wallet: true,
+  approve_withdrawals: true,
   manage_trading: true,
+  override_odds: true,
+  settle_matches: true,
+  view_fixtures: true,
+  live_feed_sync: true,
+  manage_referrals: true,
+  view_audit_logs: true,
   view_analytics: true,
   manage_subadmins: true,
 };
@@ -42,14 +53,19 @@ export function AuthProvider({ children }) {
   });
 
   const [admin, setAdmin] = useState(() => {
-    let savedSuperConnected = null;
     try {
-      const rawConn = localStorage.getItem('betaura_super_connected_account');
-      if (rawConn) savedSuperConnected = JSON.parse(rawConn);
-    } catch {
-      // ignore
-    }
-    try {
+      const token = localStorage.getItem('betaura_admin_token') || localStorage.getItem('betaura_super_admin_token');
+      const isOut = localStorage.getItem('betaura_admin_logged_out') === 'true';
+      if (!token || isOut) {
+        return null;
+      }
+      let savedSuperConnected = null;
+      try {
+        const rawConn = localStorage.getItem('betaura_super_connected_account');
+        if (rawConn) savedSuperConnected = JSON.parse(rawConn);
+      } catch {
+        // ignore
+      }
       const saved = localStorage.getItem('betaura_active_admin_profile');
       if (saved) {
         const parsed = JSON.parse(saved);
@@ -74,29 +90,18 @@ export function AuthProvider({ children }) {
     } catch {
       // ignore
     }
-    return {
-      id: 'super-admin-1',
-      name: 'ThisIsSuperAdmin',
-      phone_number: '+233540000001',
-      username: 'ThisIsSuperAdmin',
-      initial: 'S',
-      role: 'ROLE_SUPER_ADMIN',
-      roleTitle: 'Super Administrator',
-      isSuperAdmin: true,
-      kyc_tier: 4,
-      status: 'KYC_APPROVED',
-      connectedBetauraAccount: savedSuperConnected,
-      permissions: { ...ALL_PERMISSIONS },
-    };
+    return null;
   });
 
   const [authReady, setAuthReady] = useState(false);
   const [connectModalOpen, setConnectModalOpen] = useState(false);
   const [isLoggedOut, setIsLoggedOut] = useState(() => {
     try {
-      return localStorage.getItem('betaura_admin_logged_out') === 'true';
+      const token = localStorage.getItem('betaura_admin_token') || localStorage.getItem('betaura_super_admin_token');
+      const isOut = localStorage.getItem('betaura_admin_logged_out') === 'true';
+      return !token || isOut;
     } catch {
-      return false;
+      return true;
     }
   });
 
@@ -139,26 +144,24 @@ export function AuthProvider({ children }) {
 
   async function hydrateSession() {
     try {
-      // If active admin (Super Admin or Sub-Admin) has a connected BetAura account token, use that token
+      const token = localStorage.getItem('betaura_admin_token') || localStorage.getItem('betaura_super_admin_token');
+      const isOut = localStorage.getItem('betaura_admin_logged_out') === 'true';
+      if (!token || isOut) {
+        setIsLoggedOut(true);
+        setAdmin(null);
+        return;
+      }
+
+      // If active admin has a connected BetAura account token, synchronize
       if (admin?.connectedBetauraAccount?.access_token) {
         localStorage.setItem(
           'betaura_admin_token',
           admin.connectedBetauraAccount.access_token
         );
-      } else {
-        let token = localStorage.getItem('betaura_admin_token');
-        if (!token) {
-          const loginRes = await adminApi.login('ThisIsSuperAdmin', 'SuperAdmin@2026');
-          if (loginRes?.data?.access_token) {
-            token = loginRes.data.access_token;
-            localStorage.setItem('betaura_admin_token', token);
-            localStorage.setItem('betaura_super_admin_token', token);
-          }
-        }
       }
       await refreshSubAdmins();
     } catch {
-      // Keep local fallback profile if offline
+      // Keep local profile if offline
     } finally {
       setAuthReady(true);
     }
@@ -235,8 +238,12 @@ export function AuthProvider({ children }) {
   }
 
   async function loginAdmin(identifier, password) {
-    const clean = (identifier || '').trim().toLowerCase();
+    const rawId = (identifier || '').trim();
+    const clean = rawId.toLowerCase();
     const cleanPw = (password || '').trim();
+    if (!rawId || !cleanPw) {
+      throw new Error('Please enter both your Admin username/phone and password.');
+    }
 
     const matchedSub = subAdmins.find(
       (s) =>
@@ -252,26 +259,30 @@ export function AuthProvider({ children }) {
       if (matchedSub.password && matchedSub.password !== cleanPw) {
         throw new Error('Incorrect Sub-Admin password. Please check your password.');
       }
+      localStorage.removeItem('betaura_admin_logged_out');
+      setIsLoggedOut(false);
       switchActiveAdmin(matchedSub);
       return matchedSub;
     }
 
-    // Only allow the single Super Admin account (ThisIsSuperAdmin / SuperAdmin@2026)
-    if (clean !== 'thisissuperadmin' || cleanPw !== 'SuperAdmin@2026') {
-      throw new Error('Invalid admin credentials. Use your assigned Admin username and password.');
+    // Authenticate via the backend /api/v1/auth/login endpoint
+    try {
+      const res = await adminApi.login(rawId, cleanPw);
+      if (res.data?.access_token) {
+        const token = res.data.access_token;
+        localStorage.setItem('betaura_admin_token', token);
+        localStorage.setItem('betaura_super_admin_token', token);
+        localStorage.removeItem('betaura_admin_logged_out');
+        setIsLoggedOut(false);
+        switchActiveAdmin('SUPER');
+        return { name: rawId, username: rawId, role: 'ROLE_SUPER_ADMIN' };
+      }
+    } catch (err) {
+      const detail = err.response?.data?.detail;
+      throw new Error(detail || 'Invalid admin credentials. Use your assigned Admin username and password.');
     }
 
-    try {
-      const res = await adminApi.login('ThisIsSuperAdmin', 'SuperAdmin@2026');
-      if (res.data?.access_token) {
-        localStorage.setItem('betaura_admin_token', res.data.access_token);
-        localStorage.setItem('betaura_super_admin_token', res.data.access_token);
-      }
-    } catch {
-      // Allow local Super Admin login even if backend is still deploying
-    }
-    switchActiveAdmin('SUPER');
-    return { name: 'ThisIsSuperAdmin', username: 'ThisIsSuperAdmin', role: 'ROLE_SUPER_ADMIN' };
+    throw new Error('Invalid admin credentials. Use your assigned Admin username and password.');
   }
 
   async function changeSubAdminPassword(currentPassword, newPassword) {
@@ -450,10 +461,13 @@ export function AuthProvider({ children }) {
   function logoutAdmin() {
     try {
       localStorage.removeItem('betaura_admin_token');
+      localStorage.removeItem('betaura_super_admin_token');
+      localStorage.removeItem('betaura_active_admin_profile');
       localStorage.setItem('betaura_admin_logged_out', 'true');
     } catch {
       // ignore
     }
+    setAdmin(null);
     setConnectModalOpen(false);
     setIsLoggedOut(true);
   }

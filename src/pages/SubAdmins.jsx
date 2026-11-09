@@ -21,7 +21,7 @@ const PERMISSION_META = [
   {
     key: 'view_dashboard',
     label: 'View Dashboard & KPIs',
-    desc: 'Can see main dashboard summary cards',
+    desc: 'Can see main dashboard financial summary, orders, and KPI cards',
   },
   {
     key: 'create_games',
@@ -41,32 +41,87 @@ const PERMISSION_META = [
   {
     key: 'override_tickets',
     label: 'Update Lost Tickets to WON',
-    desc: 'Can flip LOST or PENDING bet slips to WON',
+    desc: 'Can flip LOST or PENDING bet slips to WON and settle payouts',
   },
   {
     key: 'manage_users',
-    label: 'Manage Players (Suspend / Delete / Upgrade)',
-    desc: 'Can suspend accounts, delete accounts, and upgrade levels',
+    label: 'Manage Players & KYC Profiles',
+    desc: 'Can view customer profiles, betting activity, and account status',
+  },
+  {
+    key: 'suspend_users',
+    label: 'Suspend & Ban Player Accounts',
+    desc: 'Can lock out players, kick them off the platform, and require support contact',
+  },
+  {
+    key: 'delete_users',
+    label: 'Permanently Delete Player Accounts',
+    desc: 'Can purge user data and clear account records permanently',
+  },
+  {
+    key: 'upgrade_kyc',
+    label: 'Upgrade VIP Levels (Tier 1-4)',
+    desc: 'Can approve KYC documents and increase player deposit/stake limits',
+  },
+  {
+    key: 'customer_support',
+    label: 'Customer Care & Live Chat Desk',
+    desc: 'Can view customer support inbox, reply to chats, and resolve inquiries',
   },
   {
     key: 'manage_wallet',
-    label: 'Wallet, Deposits & Withdrawals',
-    desc: 'Can view balance, initiate withdrawals, and approve payouts',
+    label: 'Wallet, Vault & Treasury Balances',
+    desc: 'Can view cash flow, deposit transactions, and manual adjustments',
+  },
+  {
+    key: 'approve_withdrawals',
+    label: 'Approve High-Value Withdrawals',
+    desc: 'Can approve and authorize player withdrawal requests above threshold',
   },
   {
     key: 'manage_trading',
-    label: 'Trading Desk & Odds Override',
-    desc: 'Can suspend live markets, override odds, and settle matches',
+    label: 'Trading Desk & Market Suspension',
+    desc: 'Can suspend live betting markets, lock odds, and control trading desk',
+  },
+  {
+    key: 'override_odds',
+    label: 'Override Live Odds & Margins',
+    desc: 'Can modify match odds multipliers and adjust house commission margins',
+  },
+  {
+    key: 'settle_matches',
+    label: 'Match Whistle & FT Settlement Engine',
+    desc: 'Can trigger full-time settlement and calculate customer payouts',
+  },
+  {
+    key: 'view_fixtures',
+    label: 'Fixtures & Match Schedule Inspector',
+    desc: 'Can search upcoming matches, league tables, and verify odds',
+  },
+  {
+    key: 'live_feed_sync',
+    label: 'Live Match Feed Synchronization',
+    desc: 'Can force live match scores and odds sync with external sports APIs',
+  },
+  {
+    key: 'manage_referrals',
+    label: 'Referral Program & 70% First Deposit Share',
+    desc: 'Can track affiliate links, punter signups, and 70% commission earnings',
+  },
+  {
+    key: 'view_audit_logs',
+    label: 'Audit Logs & Regulatory Compliance',
+    desc: 'Can inspect immutable security audit trail and compliance actions',
   },
   {
     key: 'view_analytics',
-    label: 'View Analytics & Reports',
-    desc: 'Can view referral analytics and export CSV reports',
+    label: 'Analytics, Financial Reports & CSV Export',
+    desc: 'Can view revenue charts, monthly growth, and download CSV sheets',
   },
   {
     key: 'manage_subadmins',
     label: 'Manage Sub-Admins (Super Admin Only)',
-    desc: 'Full control over creating sub-admins and assigning permissions',
+    desc: 'Full control over creating sub-admins and assigning role permissions',
   },
 ];
 
@@ -74,24 +129,92 @@ const ROLE_PRESETS = {
   'Match & Slip Creator': {
     view_dashboard: true,
     create_games: true,
-    edit_games: false,
+    edit_games: true,
     mix_booking: true,
     override_tickets: true,
     manage_users: false,
+    suspend_users: false,
+    delete_users: false,
+    upgrade_kyc: false,
+    customer_support: false,
     manage_wallet: false,
+    approve_withdrawals: false,
     manage_trading: true,
+    override_odds: false,
+    settle_matches: true,
+    view_fixtures: true,
+    live_feed_sync: false,
+    manage_referrals: false,
+    view_audit_logs: false,
     view_analytics: true,
     manage_subadmins: false,
   },
-  'Ticket & Support Admin': {
+  'Senior Trading Manager': {
+    view_dashboard: true,
+    create_games: true,
+    edit_games: true,
+    mix_booking: true,
+    override_tickets: true,
+    manage_users: false,
+    suspend_users: false,
+    delete_users: false,
+    upgrade_kyc: false,
+    customer_support: false,
+    manage_wallet: false,
+    approve_withdrawals: false,
+    manage_trading: true,
+    override_odds: true,
+    settle_matches: true,
+    view_fixtures: true,
+    live_feed_sync: true,
+    manage_referrals: false,
+    view_audit_logs: true,
+    view_analytics: true,
+    manage_subadmins: false,
+  },
+  'Customer Support Agent': {
     view_dashboard: true,
     create_games: false,
     edit_games: false,
     mix_booking: false,
     override_tickets: true,
     manage_users: true,
+    suspend_users: false,
+    delete_users: false,
+    upgrade_kyc: false,
+    customer_support: true,
     manage_wallet: false,
+    approve_withdrawals: false,
     manage_trading: false,
+    override_odds: false,
+    settle_matches: false,
+    view_fixtures: true,
+    live_feed_sync: false,
+    manage_referrals: true,
+    view_audit_logs: false,
+    view_analytics: false,
+    manage_subadmins: false,
+  },
+  'KYC & Compliance Officer': {
+    view_dashboard: true,
+    create_games: false,
+    edit_games: false,
+    mix_booking: false,
+    override_tickets: false,
+    manage_users: true,
+    suspend_users: true,
+    delete_users: false,
+    upgrade_kyc: true,
+    customer_support: true,
+    manage_wallet: false,
+    approve_withdrawals: false,
+    manage_trading: false,
+    override_odds: false,
+    settle_matches: false,
+    view_fixtures: false,
+    live_feed_sync: false,
+    manage_referrals: false,
+    view_audit_logs: true,
     view_analytics: true,
     manage_subadmins: false,
   },
@@ -102,20 +225,65 @@ const ROLE_PRESETS = {
     mix_booking: false,
     override_tickets: false,
     manage_users: false,
+    suspend_users: false,
+    delete_users: false,
+    upgrade_kyc: false,
+    customer_support: false,
     manage_wallet: true,
+    approve_withdrawals: true,
     manage_trading: false,
+    override_odds: false,
+    settle_matches: false,
+    view_fixtures: false,
+    live_feed_sync: false,
+    manage_referrals: true,
+    view_audit_logs: true,
     view_analytics: true,
     manage_subadmins: false,
   },
-  'Full Co-Admin': {
+  'VIP Accounts Executive': {
+    view_dashboard: true,
+    create_games: false,
+    edit_games: false,
+    mix_booking: true,
+    override_tickets: true,
+    manage_users: true,
+    suspend_users: false,
+    delete_users: false,
+    upgrade_kyc: true,
+    customer_support: true,
+    manage_wallet: false,
+    approve_withdrawals: false,
+    manage_trading: false,
+    override_odds: false,
+    settle_matches: false,
+    view_fixtures: true,
+    live_feed_sync: false,
+    manage_referrals: true,
+    view_audit_logs: false,
+    view_analytics: true,
+    manage_subadmins: false,
+  },
+  'Full Operations Co-Admin': {
     view_dashboard: true,
     create_games: true,
     edit_games: true,
     mix_booking: true,
     override_tickets: true,
     manage_users: true,
+    suspend_users: true,
+    delete_users: true,
+    upgrade_kyc: true,
+    customer_support: true,
     manage_wallet: true,
+    approve_withdrawals: true,
     manage_trading: true,
+    override_odds: true,
+    settle_matches: true,
+    view_fixtures: true,
+    live_feed_sync: true,
+    manage_referrals: true,
+    view_audit_logs: true,
     view_analytics: true,
     manage_subadmins: false,
   },
@@ -477,10 +645,35 @@ export default function SubAdmins() {
 
           {/* Granular Permission Checkboxes */}
           <div className="space-y-2 pt-2">
-            <p className="text-xs font-extrabold text-gray-900">
-              Limit What This Sub-Admin Can See & Do:
-            </p>
-            <div className="space-y-1.5 max-h-80 overflow-y-auto pr-1">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-extrabold text-gray-900">
+                Limit What This Sub-Admin Can See & Do:
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allTrue = {};
+                    PERMISSION_META.forEach((p) => {
+                      allTrue[p.key] = p.key !== 'manage_subadmins';
+                    });
+                    setPermissions(allTrue);
+                  }}
+                  className="text-[11px] font-bold text-[#00b074] hover:underline cursor-pointer"
+                >
+                  Select All
+                </button>
+                <span className="text-gray-300">•</span>
+                <button
+                  type="button"
+                  onClick={() => setPermissions({})}
+                  className="text-[11px] font-semibold text-gray-400 hover:text-gray-600 cursor-pointer"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+            <div className="space-y-1.5 max-h-96 overflow-y-auto pr-1">
               {PERMISSION_META.map((p) => (
                 <label
                   key={p.key}

@@ -21,20 +21,20 @@ import { useAuth } from '../../context/AuthContext';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: Home, end: true, perm: 'view_dashboard' },
-  { to: '/custom-games', label: 'Create & Mix Games', icon: Sparkles, perm: ['create_games', 'mix_booking'] },
+  { to: '/custom-games', label: 'Create & Mix Games', icon: Sparkles, perm: ['create_games', 'edit_games', 'mix_booking'] },
   { to: '/orders', label: 'Bet Tickets (Won/Lost)', icon: ListOrdered, perm: 'override_tickets' },
   { to: '/order-detail', label: 'Ticket Detail', icon: FileText, perm: 'override_tickets' },
-  { to: '/customers', label: 'Customers & Tiers', icon: Users, perm: 'manage_users' },
+  { to: '/customers', label: 'Customers & Tiers', icon: Users, perm: ['manage_users', 'upgrade_kyc', 'suspend_users', 'delete_users'] },
   { to: '/sub-admins', label: 'Sub-Admins & Roles', icon: ShieldCheck, perm: 'manage_subadmins' },
   { to: '/analytics', label: 'Analytics', icon: BarChart2, perm: 'view_analytics' },
-  { to: '/referrals', label: 'Referrals', icon: Star, perm: 'view_dashboard' },
-  { to: '/fixtures', label: 'Fixtures & Odds', icon: Trophy, perm: 'manage_trading' },
-  { to: '/trading', label: 'Trading Desk', icon: Sliders, perm: 'manage_trading' },
-  { to: '/customer-detail', label: 'KYC & Players', icon: UserCheck, perm: 'manage_users' },
-  { to: '/customer-care', label: 'Customer Care', icon: MessageSquare, perm: 'manage_subadmins' },
-  { to: '/audit-logs', label: 'Audit Logs', icon: Calendar, perm: 'view_dashboard' },
-  { to: '/live-sync', label: 'Live Feed Sync', icon: Trophy, perm: 'manage_trading' },
-  { to: '/wallet', label: 'Wallet & Payouts', icon: Wallet, perm: 'manage_wallet' },
+  { to: '/referrals', label: 'Referrals (70%)', icon: Star, perm: ['manage_referrals', 'view_dashboard'] },
+  { to: '/fixtures', label: 'Fixtures & Odds', icon: Trophy, perm: ['view_fixtures', 'manage_trading'] },
+  { to: '/trading', label: 'Trading Desk', icon: Sliders, perm: ['manage_trading', 'override_odds', 'settle_matches'] },
+  { to: '/customer-detail', label: 'KYC & Players', icon: UserCheck, perm: ['manage_users', 'upgrade_kyc'] },
+  { to: '/customer-care', label: 'Customer Care', icon: MessageSquare, perm: ['customer_support', 'manage_subadmins'] },
+  { to: '/audit-logs', label: 'Audit Logs', icon: Calendar, perm: ['view_audit_logs', 'view_dashboard'] },
+  { to: '/live-sync', label: 'Live Feed Sync', icon: Trophy, perm: ['live_feed_sync', 'manage_trading'] },
+  { to: '/wallet', label: 'Wallet & Payouts', icon: Wallet, perm: ['manage_wallet', 'approve_withdrawals'] },
 ];
 
 export default function Sidebar({ onQuickAction }) {
