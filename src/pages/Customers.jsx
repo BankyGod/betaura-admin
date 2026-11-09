@@ -10,6 +10,7 @@ import {
   X,
   UserCheck,
   Link2,
+  Key,
 } from 'lucide-react';
 import { adminApi } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
@@ -31,6 +32,7 @@ export default function Customers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [msg, setMsg] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState(null);
 
@@ -424,21 +426,47 @@ export default function Customers() {
     }
   }
 
+  async function handleResetPassword(player) {
+    if (!canManage) return;
+    const targetId = player.id || player.phone;
+    const newPw = window.prompt(
+      `Set new login password for player ${player.name} (${player.phone}):`,
+      'Player@2026'
+    );
+    if (!newPw || !newPw.trim()) return;
+
+    try {
+      setLoading(true);
+      await adminApi.manageUserAccount(targetId, {
+        action: 'RESET_PASSWORD',
+        password: newPw.trim(),
+      });
+      setMsg(`Password for ${player.name} successfully updated to: ${newPw.trim()}`);
+    } catch (err) {
+      setMsg(err.response?.data?.detail || 'Failed to update player password.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleAddLookupPlayer(e) {
     e.preventDefault();
     if (!newPhone.trim()) return;
     const cleanPhone = newPhone.trim();
     const cleanName = newName.trim();
+    const cleanPassword = newPassword.trim() || 'Player@2026';
 
     try {
       setLoading(true);
       await adminApi.createOrLookupUser({
         name: cleanName || undefined,
         phone_number: cleanPhone,
+        password: cleanPassword,
       });
       setNewName('');
       setNewPhone('');
-      setMsg(`Synced player ${cleanName || cleanPhone} with backend database.`);
+      setNewPassword('');
+      setMsg(`Synced player ${cleanName || cleanPhone} (Password: ${cleanPassword}) with backend.`);
       await fetchBackendUsers();
     } catch {
       // Fallback: register via standard /api/v1/auth/register if create-or-lookup isn't live yet
@@ -446,12 +474,13 @@ export default function Customers() {
         await adminApi.register({
           phone_number: cleanPhone,
           username: cleanName || undefined,
-          password: 'Player@2026',
+          password: cleanPassword,
           country_code: 'GHA',
         });
         setNewName('');
         setNewPhone('');
-        setMsg(`Registered player ${cleanName || cleanPhone} on backend.`);
+        setNewPassword('');
+        setMsg(`Registered player ${cleanName || cleanPhone} (Password: ${cleanPassword}) on backend.`);
         await fetchBackendUsers();
       } catch (regErr) {
         setMsg(
@@ -555,6 +584,13 @@ export default function Customers() {
             placeholder="Phone Number (e.g. +233541234567)"
             className="flex-1 min-w-[160px] rounded-xl border border-gray-200 px-3 py-2 text-xs"
           />
+          <input
+            type="text"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="Password (default: Player@2026)"
+            className="flex-1 min-w-[140px] rounded-xl border border-gray-200 px-3 py-2 text-xs"
+          />
           <button
             type="submit"
             disabled={loading}
@@ -618,35 +654,43 @@ export default function Customers() {
 
                 {canManage && (
                   <div
-                    className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-100"
+                    className="grid grid-cols-4 gap-1.5 pt-2 border-t border-gray-100"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button
                       type="button"
-                      onClick={() => handleUpgradeLevel(c)}
-                      className="inline-flex items-center justify-center gap-1 rounded-xl bg-blue-50 text-[#2d9cdb] py-1.5 text-[11px] font-bold"
+                      onClick={() => handleResetPassword(c)}
+                      className="inline-flex items-center justify-center gap-1 rounded-xl bg-emerald-50 text-[#00b074] py-1.5 text-[10px] font-bold"
                     >
-                      <ArrowUpCircle className="w-3.5 h-3.5" />
+                      <Key className="w-3 h-3" />
+                      <span>Pass</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleUpgradeLevel(c)}
+                      className="inline-flex items-center justify-center gap-1 rounded-xl bg-blue-50 text-[#2d9cdb] py-1.5 text-[10px] font-bold"
+                    >
+                      <ArrowUpCircle className="w-3 h-3" />
                       <span>Upgrade</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => handleToggleSuspend(c)}
-                      className={`inline-flex items-center justify-center gap-1 rounded-xl py-1.5 text-[11px] font-bold ${
+                      className={`inline-flex items-center justify-center gap-1 rounded-xl py-1.5 text-[10px] font-bold ${
                         isSuspended
                           ? 'bg-[#d9f3ea] text-[#00b074]'
                           : 'bg-amber-50 text-amber-700'
                       }`}
                     >
-                      <ShieldAlert className="w-3.5 h-3.5" />
-                      <span>{isSuspended ? 'Unsuspend' : 'Suspend'}</span>
+                      <ShieldAlert className="w-3 h-3" />
+                      <span>{isSuspended ? 'Unsusp' : 'Suspend'}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => handleDeleteAccount(c)}
-                      className="inline-flex items-center justify-center gap-1 rounded-xl bg-red-50 text-red-600 py-1.5 text-[11px] font-bold"
+                      className="inline-flex items-center justify-center gap-1 rounded-xl bg-red-50 text-red-600 py-1.5 text-[10px] font-bold"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3 h-3" />
                       <span>Delete</span>
                     </button>
                   </div>
@@ -734,6 +778,15 @@ export default function Customers() {
                       >
                         {canManage && (
                           <div className="inline-flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleResetPassword(c)}
+                              className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 hover:bg-[#00b074] text-[#00b074] hover:text-white px-2.5 py-1.5 text-[11px] font-bold transition"
+                            >
+                              <Key className="w-3.5 h-3.5" />
+                              <span>Reset Pass</span>
+                            </button>
+
                             <button
                               type="button"
                               onClick={() => handleUpgradeLevel(c)}
