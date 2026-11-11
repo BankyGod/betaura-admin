@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: betaura-admin
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://betaura-api.onrender.com
+      - key: VITE_WEBSITE_URL
+        value: https://betaura.onrender.com
