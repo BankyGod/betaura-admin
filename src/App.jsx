@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import AdminLayout from './components/layout/AdminLayout';
 import Home from './pages/Home';
@@ -21,7 +21,7 @@ import SubAdmins from './pages/SubAdmins';
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <HashRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route element={<AdminLayout />}>
@@ -43,7 +43,7 @@ export default function App() {
             <Route path="/settings" element={<Settings />} />
           </Route>
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </AuthProvider>
   );
 }
