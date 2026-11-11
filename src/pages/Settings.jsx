@@ -20,35 +20,217 @@ import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../utils/formatters';
 
 const CAPABILITY_ITEMS = [
+  // Dashboard & Analytics
   {
     key: 'view_dashboard',
-    title: 'Dashboard & Revenue Analytics',
-    desc: 'View platform overview, charts, and referral performance metrics',
+    title: 'Dashboard & Revenue KPIs',
+    desc: 'View platform overview, charts, gross gaming turnover, and KPI summaries',
   },
   {
+    key: 'view_analytics',
+    title: 'Financial Reports & Analytics',
+    desc: 'View betting turnover graphs, customer retention, and revenue charts',
+  },
+  {
+    key: 'export_reports',
+    title: 'Financial CSV Exports',
+    desc: 'Download CSV reports for bet slips, accounting ledgers, and transactions',
+  },
+
+  // Games & Scripting
+  {
     key: 'create_games',
-    title: 'Create Custom Matches & Odds',
-    desc: 'Publish custom fixtures and markets directly to BetAura sportsbook',
+    title: 'Create Custom Matches & Fixtures',
+    desc: 'Publish bespoke soccer fixtures, custom leagues, and teams to BetAura',
+  },
+  {
+    key: 'edit_games',
+    title: 'Edit Custom Matches & Markets',
+    desc: 'Modify existing custom matches, kickoff timestamps, or delete games',
+  },
+  {
+    key: 'script_goals',
+    title: 'Goal Timeline Scripting',
+    desc: 'Set exact goal minutes and goal scorers for custom simulated matches',
+  },
+  {
+    key: 'script_cards',
+    title: 'Cards, Penalties & VAR Scripting',
+    desc: 'Script yellow/red cards, penalty kicks, and VAR moments',
+  },
+  {
+    key: 'control_match_clock',
+    title: 'Match Whistle & Clock Manipulation',
+    desc: 'Fast-forward game time, trigger half-time and full-time whistles',
   },
   {
     key: 'mix_booking',
     title: 'Mix & Generate Booking Codes',
-    desc: 'Build multi-leg accumulators and generate shareable booking codes',
+    desc: 'Combine custom scripted matches with real live API fixtures into booking codes',
+  },
+
+  // Bet Slips & Tickets
+  {
+    key: 'view_bets',
+    title: 'Bet Slips & Ticket Inspector',
+    desc: 'Search customer bet slips, view placed legs, stakes, and punter IP data',
   },
   {
     key: 'override_tickets',
-    title: 'Settle & Override Bet Tickets',
-    desc: 'Force-win, void, or edit legs on active and settled betslips',
+    title: 'Force-Win Ticket Override',
+    desc: 'Flip any LOST or PENDING bet slip to WON and trigger instant payout',
   },
+  {
+    key: 'void_cancel_bets',
+    title: 'Void & Cancel Bet Slips',
+    desc: 'Void bet legs and refund stakes directly to customer wallets',
+  },
+  {
+    key: 'settle_payouts',
+    title: 'Bet Payout Settlement Engine',
+    desc: 'Trigger automated winning ticket payouts and wallet crediting',
+  },
+
+  // Customer Management
   {
     key: 'manage_users',
-    title: 'Player Accounts & KYC Tiers',
-    desc: 'Upgrade player levels (Level 1–4), suspend, or remove accounts',
+    title: 'Player Accounts Directory',
+    desc: 'View user directory, betting histories, and wallet balances',
   },
   {
+    key: 'create_customer',
+    title: 'Manual Player Registration',
+    desc: 'Register new players with initial password and starting wallet balance',
+  },
+  {
+    key: 'suspend_users',
+    title: 'Suspend & Ban Player Accounts',
+    desc: 'Lock accounts, kick active sessions, and require support contact',
+  },
+  {
+    key: 'delete_users',
+    title: 'Delete Single Player Account',
+    desc: 'Permanently purge individual customer records and bet history',
+  },
+  {
+    key: 'purge_customers',
+    title: 'Purge All Customer Accounts',
+    desc: 'Super-Admin platform reset to wipe all non-admin player records',
+  },
+  {
+    key: 'reset_passwords',
+    title: '1-Click Player Password Reset',
+    desc: 'Generate temporary passwords for locked-out customer accounts',
+  },
+  {
+    key: 'upgrade_kyc',
+    title: 'Player KYC Tiers (Level 1–4)',
+    desc: 'Verify national IDs and elevate deposit, stake, and payout ceilings',
+  },
+  {
+    key: 'adjust_balance',
+    title: 'Manual Wallet Adjustments',
+    desc: 'Perform direct credit or debit adjustments on customer wallets',
+  },
+
+  // Trading & Odds
+  {
+    key: 'manage_trading',
+    title: 'Live Trading Desk Console',
+    desc: 'Monitor live match exposure and manage active trading books',
+  },
+  {
+    key: 'suspend_markets',
+    title: 'Freeze & Suspend Live Markets',
+    desc: 'Lock betting markets and broadcast instant suspension frames',
+  },
+  {
+    key: 'override_odds',
+    title: 'Override Live Match Odds',
+    desc: 'Adjust 1X2 and Over/Under market odds multipliers in real time',
+  },
+  {
+    key: 'adjust_margins',
+    title: 'Bookmaker Margin & Commission',
+    desc: 'Tune house profit margin percentages and market overrounds',
+  },
+  {
+    key: 'settle_matches',
+    title: 'Full-Time Match Settlement',
+    desc: 'Set final scores and trigger automatic payouts across all slips',
+  },
+
+  // Fixtures & Data Feed
+  {
+    key: 'view_fixtures',
+    title: 'Fixtures & Schedule Inspector',
+    desc: 'Inspect upcoming matches, league tables, and live odds',
+  },
+  {
+    key: 'live_feed_sync',
+    title: 'Sports API Live Feed Sync',
+    desc: 'Force immediate match and odds sync with external sports APIs',
+  },
+  {
+    key: 'free_db_space',
+    title: 'Database Storage Maintenance',
+    desc: 'Prune expired matches and orphaned odds to optimize database space',
+  },
+
+  // Wallet & Treasury
+  {
     key: 'manage_wallet',
-    title: 'Wallet Credit & Payout Approval',
-    desc: 'Credit/debit player wallets and approve high-value withdrawals',
+    title: 'Treasury & Liquidity Balances',
+    desc: 'Inspect platform vault liquidity, deposit ledger, and cash flow',
+  },
+  {
+    key: 'approve_withdrawals',
+    title: 'Approve High-Value Withdrawals',
+    desc: 'Authorize or reject player bank and MoMo withdrawal requests',
+  },
+  {
+    key: 'view_payment_logs',
+    title: 'Payment Gateway Logs',
+    desc: 'Inspect Paystack, Flutterwave, and MoMo webhook receipts',
+  },
+
+  // Referrals
+  {
+    key: 'manage_referrals',
+    title: '70% Referral & Affiliate Engine',
+    desc: 'Track affiliate punters, invite codes, and 70% commission earnings',
+  },
+  {
+    key: 'adjust_commissions',
+    title: 'Affiliate Commission Overrides',
+    desc: 'Configure affiliate earnings percentages and bonus rates',
+  },
+
+  // Support & Audit
+  {
+    key: 'customer_support',
+    title: 'Customer Care & Live Chat',
+    desc: 'Reply to player inquiries and resolve support tickets',
+  },
+  {
+    key: 'broadcast_alerts',
+    title: 'Broadcast Platform Notices',
+    desc: 'Push system-wide announcements and promotional alerts',
+  },
+  {
+    key: 'view_audit_logs',
+    title: 'Security Audit Trail',
+    desc: 'Inspect immutable records of all staff actions and security events',
+  },
+  {
+    key: 'regulatory_compliance',
+    title: 'AML & Fraud Compliance',
+    desc: 'Detect multi-accounting, suspicious betting patterns, and risk flags',
+  },
+  {
+    key: 'manage_subadmins',
+    title: 'Manage Sub-Admins & Permissions',
+    desc: 'Create sub-admin staff accounts and configure permission boundaries',
   },
 ];
 

@@ -4,26 +4,54 @@ import { adminApi } from '../api/endpoints';
 const AuthContext = createContext(null);
 
 export const ALL_PERMISSIONS = {
+  // Dashboard & Analytics
   view_dashboard: true,
+  view_analytics: true,
+  export_reports: true,
+  // Custom Games & Goal Scripting
   create_games: true,
   edit_games: true,
+  script_goals: true,
+  script_cards: true,
+  control_match_clock: true,
   mix_booking: true,
+  // Bet Slips & Ticket Settlement
+  view_bets: true,
   override_tickets: true,
+  void_cancel_bets: true,
+  settle_payouts: true,
+  // Player & KYC Operations
   manage_users: true,
+  create_customer: true,
   suspend_users: true,
   delete_users: true,
+  purge_customers: true,
+  reset_passwords: true,
   upgrade_kyc: true,
-  customer_support: true,
-  manage_wallet: true,
-  approve_withdrawals: true,
+  adjust_balance: true,
+  // Trading Desk & Odds Management
   manage_trading: true,
+  suspend_markets: true,
   override_odds: true,
+  adjust_margins: true,
   settle_matches: true,
+  // Fixtures & Data Feeds
   view_fixtures: true,
   live_feed_sync: true,
+  free_db_space: true,
+  // Wallet, Banking & Treasury
+  manage_wallet: true,
+  approve_withdrawals: true,
+  view_payment_logs: true,
+  // Referrals & Affiliates
   manage_referrals: true,
+  adjust_commissions: true,
+  // Customer Care & Announcements
+  customer_support: true,
+  broadcast_alerts: true,
+  // Security, Audit & Administration
   view_audit_logs: true,
-  view_analytics: true,
+  regulatory_compliance: true,
   manage_subadmins: true,
 };
 

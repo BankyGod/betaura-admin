@@ -18,276 +18,646 @@ import { adminApi } from '../api/endpoints';
 import { formatCurrency } from '../utils/formatters';
 
 const PERMISSION_META = [
+  // 1. Dashboard & Financial Intelligence
   {
     key: 'view_dashboard',
-    label: 'View Dashboard & KPIs',
-    desc: 'Can see main dashboard financial summary, orders, and KPI cards',
-  },
-  {
-    key: 'create_games',
-    label: 'Create Custom Games & Goal Times',
-    desc: 'Can create matches, set goal minutes & final scores',
-  },
-  {
-    key: 'edit_games',
-    label: 'Edit Created Games & Markets',
-    desc: 'Can modify existing custom games and private markets',
-  },
-  {
-    key: 'mix_booking',
-    label: 'Mix Games & Generate Booking Codes',
-    desc: 'Can mix custom games with live API matches into booking codes',
-  },
-  {
-    key: 'override_tickets',
-    label: 'Update Lost Tickets to WON',
-    desc: 'Can flip LOST or PENDING bet slips to WON and settle payouts',
-  },
-  {
-    key: 'manage_users',
-    label: 'Manage Players & KYC Profiles',
-    desc: 'Can view customer profiles, betting activity, and account status',
-  },
-  {
-    key: 'suspend_users',
-    label: 'Suspend & Ban Player Accounts',
-    desc: 'Can lock out players, kick them off the platform, and require support contact',
-  },
-  {
-    key: 'delete_users',
-    label: 'Permanently Delete Player Accounts',
-    desc: 'Can purge user data and clear account records permanently',
-  },
-  {
-    key: 'upgrade_kyc',
-    label: 'Upgrade VIP Levels (Tier 1-4)',
-    desc: 'Can approve KYC documents and increase player deposit/stake limits',
-  },
-  {
-    key: 'customer_support',
-    label: 'Customer Care & Live Chat Desk',
-    desc: 'Can view customer support inbox, reply to chats, and resolve inquiries',
-  },
-  {
-    key: 'manage_wallet',
-    label: 'Wallet, Vault & Treasury Balances',
-    desc: 'Can view cash flow, deposit transactions, and manual adjustments',
-  },
-  {
-    key: 'approve_withdrawals',
-    label: 'Approve High-Value Withdrawals',
-    desc: 'Can approve and authorize player withdrawal requests above threshold',
-  },
-  {
-    key: 'manage_trading',
-    label: 'Trading Desk & Market Suspension',
-    desc: 'Can suspend live betting markets, lock odds, and control trading desk',
-  },
-  {
-    key: 'override_odds',
-    label: 'Override Live Odds & Margins',
-    desc: 'Can modify match odds multipliers and adjust house commission margins',
-  },
-  {
-    key: 'settle_matches',
-    label: 'Match Whistle & FT Settlement Engine',
-    desc: 'Can trigger full-time settlement and calculate customer payouts',
-  },
-  {
-    key: 'view_fixtures',
-    label: 'Fixtures & Match Schedule Inspector',
-    desc: 'Can search upcoming matches, league tables, and verify odds',
-  },
-  {
-    key: 'live_feed_sync',
-    label: 'Live Match Feed Synchronization',
-    desc: 'Can force live match scores and odds sync with external sports APIs',
-  },
-  {
-    key: 'manage_referrals',
-    label: 'Referral Program & 70% First Deposit Share',
-    desc: 'Can track affiliate links, punter signups, and 70% commission earnings',
-  },
-  {
-    key: 'view_audit_logs',
-    label: 'Audit Logs & Regulatory Compliance',
-    desc: 'Can inspect immutable security audit trail and compliance actions',
+    category: 'Dashboard & Reports',
+    label: 'View Dashboard & Financial KPIs',
+    desc: 'Can see main dashboard financial summary, gross gaming revenue (GGR), and KPI cards',
   },
   {
     key: 'view_analytics',
-    label: 'Analytics, Financial Reports & CSV Export',
-    desc: 'Can view revenue charts, monthly growth, and download CSV sheets',
+    category: 'Dashboard & Reports',
+    label: 'Analytics & Revenue Performance',
+    desc: 'Can view revenue charts, betting turnover, customer retention graphs, and daily stats',
+  },
+  {
+    key: 'export_reports',
+    category: 'Dashboard & Reports',
+    label: 'Download & Export Financial CSVs',
+    desc: 'Can download bet tickets, player ledger, cash flow, and tax reporting spreadsheets',
+  },
+
+  // 2. Custom Game & Goal Scripting Engine
+  {
+    key: 'create_games',
+    category: 'Games & Goal Scripting',
+    label: 'Create Custom Games & Match Profiles',
+    desc: 'Can scaffold custom soccer fixtures, pick leagues, teams, and kickoff timestamps',
+  },
+  {
+    key: 'edit_games',
+    category: 'Games & Goal Scripting',
+    label: 'Edit Created Games & Markets',
+    desc: 'Can modify existing custom match names, leagues, kickoff times, or delete games',
+  },
+  {
+    key: 'script_goals',
+    category: 'Games & Goal Scripting',
+    label: 'Script Goal Times & Scorers',
+    desc: 'Can script exact minute-by-minute goal events (e.g. 14\', 45\'+2, 89\') and goal scorers',
+  },
+  {
+    key: 'script_cards',
+    category: 'Games & Goal Scripting',
+    label: 'Script Cards, Penalties & VAR',
+    desc: 'Can script yellow cards, red cards, penalties, and disallowed VAR moments',
+  },
+  {
+    key: 'control_match_clock',
+    category: 'Games & Goal Scripting',
+    label: 'Match Whistle & Clock Fast-Forward',
+    desc: 'Can manually advance the match clock, trigger HT break, and blow full-time whistle',
+  },
+  {
+    key: 'mix_booking',
+    category: 'Games & Goal Scripting',
+    label: 'Mix Games & Generate Booking Codes',
+    desc: 'Can combine custom scripted matches with real live API fixtures into booking codes',
+  },
+
+  // 3. Bet Slips & Ticket Settlement Operations
+  {
+    key: 'view_bets',
+    category: 'Tickets & Payouts',
+    label: 'Inspect Bet Slips & Selections',
+    desc: 'Can search all placed bets, inspect multi-leg selections, stakes, and player IP addresses',
+  },
+  {
+    key: 'override_tickets',
+    category: 'Tickets & Payouts',
+    label: 'Update Lost/Pending Tickets to WON',
+    desc: 'Can flip any LOST or PENDING bet slip to WON, recalculate multiplier, and force payouts',
+  },
+  {
+    key: 'void_cancel_bets',
+    category: 'Tickets & Payouts',
+    label: 'Void, Cancel & Refund Bet Slips',
+    desc: 'Can void erroneous or postponed legs and refund stakes directly to punter wallets',
+  },
+  {
+    key: 'settle_payouts',
+    category: 'Tickets & Payouts',
+    label: 'Trigger Bet Payout Settlement Engine',
+    desc: 'Can run automated payout distribution and credit punter balance for winning betslips',
+  },
+
+  // 4. Player, KYC & Customer Management
+  {
+    key: 'manage_users',
+    category: 'Players & Accounts',
+    label: 'Manage Players & Betting Activity',
+    desc: 'Can view customer directory, transaction histories, wallet balances, and user details',
+  },
+  {
+    key: 'create_customer',
+    category: 'Players & Accounts',
+    label: 'Add & Register Players Manually',
+    desc: 'Can register new player accounts with initial password, tier, and starting wallet balance',
+  },
+  {
+    key: 'suspend_users',
+    category: 'Players & Accounts',
+    label: 'Suspend & Ban Player Accounts',
+    desc: 'Can lock out players, kick active sessions off the platform, and require support contact',
+  },
+  {
+    key: 'delete_users',
+    category: 'Players & Accounts',
+    label: 'Delete Single Player Account',
+    desc: 'Can purge individual player profile and betting records permanently',
+  },
+  {
+    key: 'purge_customers',
+    category: 'Players & Accounts',
+    label: 'Purge All Customer Accounts (Super)',
+    desc: 'Can wipe all non-admin customer records and reset the user database completely',
+  },
+  {
+    key: 'reset_passwords',
+    category: 'Players & Accounts',
+    label: '1-Click Player Password Reset',
+    desc: 'Can generate new temporary passwords and reset locked-out customer accounts',
+  },
+  {
+    key: 'upgrade_kyc',
+    category: 'Players & Accounts',
+    label: 'Upgrade VIP Levels (Tier 1-4)',
+    desc: 'Can approve KYC IDs, verify national identity cards, and elevate deposit/stake limits',
+  },
+  {
+    key: 'adjust_balance',
+    category: 'Players & Accounts',
+    label: 'Credit / Debit Player Balances',
+    desc: 'Can perform direct wallet credit or debit adjustments on any punter account',
+  },
+
+  // 5. Trading Desk & Market Operations
+  {
+    key: 'manage_trading',
+    category: 'Trading & Markets',
+    label: 'Trading Desk & Live Overview',
+    desc: 'Can access live match trading console, monitor exposure, and oversee active books',
+  },
+  {
+    key: 'suspend_markets',
+    category: 'Trading & Markets',
+    label: 'Freeze & Suspend Live Markets',
+    desc: 'Can freeze betting markets, lock odds, and broadcast instant suspension to all clients',
+  },
+  {
+    key: 'override_odds',
+    category: 'Trading & Markets',
+    label: 'Override Live Odds & Multipliers',
+    desc: 'Can adjust Home/Draw/Away and Over/Under odds multipliers in real time',
+  },
+  {
+    key: 'adjust_margins',
+    category: 'Trading & Markets',
+    label: 'Adjust House Profit Margin %',
+    desc: 'Can tune bookmaker commission percentage and overround on match betting markets',
+  },
+  {
+    key: 'settle_matches',
+    category: 'Trading & Markets',
+    label: 'Match Whistle & FT Settlement Engine',
+    desc: 'Can mark matches concluded, set official FT scores, and trigger automatic payouts',
+  },
+
+  // 6. Fixtures, Schedules & Sports Data Feed
+  {
+    key: 'view_fixtures',
+    category: 'Fixtures & Data Feed',
+    label: 'Fixtures & Match Schedule Inspector',
+    desc: 'Can search upcoming matches, league fixtures, team lineups, and verify raw odds',
+  },
+  {
+    key: 'live_feed_sync',
+    category: 'Fixtures & Data Feed',
+    label: 'Force Live Sports API Feed Sync',
+    desc: 'Can trigger immediate API sync to fetch latest fixtures and scores from data providers',
+  },
+  {
+    key: 'free_db_space',
+    category: 'Fixtures & Data Feed',
+    label: 'Free DB Space & Prune Expired Matches',
+    desc: 'Can purge historical expired matches, orphaned odds, and optimize database storage',
+  },
+
+  // 7. Wallet, Banking & Treasury
+  {
+    key: 'manage_wallet',
+    category: 'Wallet & Treasury',
+    label: 'Treasury Balances & Vault Cashflow',
+    desc: 'Can inspect platform total reserves, gross deposits, pending payouts, and cash ledger',
+  },
+  {
+    key: 'approve_withdrawals',
+    category: 'Wallet & Treasury',
+    label: 'Approve High-Value Withdrawals',
+    desc: 'Can review, approve, or reject player MoMo and bank withdrawal payout requests',
+  },
+  {
+    key: 'view_payment_logs',
+    category: 'Wallet & Treasury',
+    label: 'Payment Gateway Transaction Logs',
+    desc: 'Can inspect Paystack, Flutterwave, and Mobile Money API payment receipts and webhooks',
+  },
+
+  // 8. Referral Program & Affiliate Commission
+  {
+    key: 'manage_referrals',
+    category: 'Referrals & Growth',
+    label: 'Referral Program & 70% First Deposit Share',
+    desc: 'Can track affiliate links, punter acquisition, downstream bets, and calculate earnings',
+  },
+  {
+    key: 'adjust_commissions',
+    category: 'Referrals & Growth',
+    label: 'Affiliate Commission Rate Overrides',
+    desc: 'Can set custom affiliate commission percentages and override partner tier payouts',
+  },
+
+  // 9. Customer Care & Live Communications
+  {
+    key: 'customer_support',
+    category: 'Support & Alerts',
+    label: 'Customer Care & Live Chat Desk',
+    desc: 'Can view customer support inbox, reply to live chats, and resolve player tickets',
+  },
+  {
+    key: 'broadcast_alerts',
+    category: 'Support & Alerts',
+    label: 'Broadcast Platform Notices & Alerts',
+    desc: 'Can send system-wide maintenance banners, promotional popups, and player SMS alerts',
+  },
+
+  // 10. Audit, Security & Administration
+  {
+    key: 'view_audit_logs',
+    category: 'Security & Compliance',
+    label: 'Audit Logs & Tamper-Evident Trail',
+    desc: 'Can inspect immutable security audit trail of all staff logins, odds edits, and payouts',
+  },
+  {
+    key: 'regulatory_compliance',
+    category: 'Security & Compliance',
+    label: 'AML & Fraud Regulatory Compliance',
+    desc: 'Can inspect suspicious betting activity, multi-account collisions, and AML flags',
   },
   {
     key: 'manage_subadmins',
+    category: 'Security & Compliance',
     label: 'Manage Sub-Admins (Super Admin Only)',
-    desc: 'Full control over creating sub-admins and assigning role permissions',
+    desc: 'Full control over creating sub-admins, managing staff accounts, and setting permissions',
   },
 ];
 
 const ROLE_PRESETS = {
-  'Match & Slip Creator': {
+  'Super Administrator (Full)': {
     view_dashboard: true,
-    create_games: true,
-    edit_games: true,
-    mix_booking: true,
-    override_tickets: true,
-    manage_users: false,
-    suspend_users: false,
-    delete_users: false,
-    upgrade_kyc: false,
-    customer_support: false,
-    manage_wallet: false,
-    approve_withdrawals: false,
-    manage_trading: true,
-    override_odds: false,
-    settle_matches: true,
-    view_fixtures: true,
-    live_feed_sync: false,
-    manage_referrals: false,
-    view_audit_logs: false,
     view_analytics: true,
-    manage_subadmins: false,
-  },
-  'Senior Trading Manager': {
-    view_dashboard: true,
+    export_reports: true,
     create_games: true,
     edit_games: true,
+    script_goals: true,
+    script_cards: true,
+    control_match_clock: true,
     mix_booking: true,
+    view_bets: true,
     override_tickets: true,
-    manage_users: false,
-    suspend_users: false,
-    delete_users: false,
-    upgrade_kyc: false,
-    customer_support: false,
-    manage_wallet: false,
-    approve_withdrawals: false,
+    void_cancel_bets: true,
+    settle_payouts: true,
+    manage_users: true,
+    create_customer: true,
+    suspend_users: true,
+    delete_users: true,
+    purge_customers: true,
+    reset_passwords: true,
+    upgrade_kyc: true,
+    adjust_balance: true,
     manage_trading: true,
+    suspend_markets: true,
     override_odds: true,
+    adjust_margins: true,
     settle_matches: true,
     view_fixtures: true,
     live_feed_sync: true,
-    manage_referrals: false,
-    view_audit_logs: true,
-    view_analytics: true,
-    manage_subadmins: false,
-  },
-  'Customer Support Agent': {
-    view_dashboard: true,
-    create_games: false,
-    edit_games: false,
-    mix_booking: false,
-    override_tickets: true,
-    manage_users: true,
-    suspend_users: false,
-    delete_users: false,
-    upgrade_kyc: false,
-    customer_support: true,
-    manage_wallet: false,
-    approve_withdrawals: false,
-    manage_trading: false,
-    override_odds: false,
-    settle_matches: false,
-    view_fixtures: true,
-    live_feed_sync: false,
-    manage_referrals: true,
-    view_audit_logs: false,
-    view_analytics: false,
-    manage_subadmins: false,
-  },
-  'KYC & Compliance Officer': {
-    view_dashboard: true,
-    create_games: false,
-    edit_games: false,
-    mix_booking: false,
-    override_tickets: false,
-    manage_users: true,
-    suspend_users: true,
-    delete_users: false,
-    upgrade_kyc: true,
-    customer_support: true,
-    manage_wallet: false,
-    approve_withdrawals: false,
-    manage_trading: false,
-    override_odds: false,
-    settle_matches: false,
-    view_fixtures: false,
-    live_feed_sync: false,
-    manage_referrals: false,
-    view_audit_logs: true,
-    view_analytics: true,
-    manage_subadmins: false,
-  },
-  'Finance & Wallet Admin': {
-    view_dashboard: true,
-    create_games: false,
-    edit_games: false,
-    mix_booking: false,
-    override_tickets: false,
-    manage_users: false,
-    suspend_users: false,
-    delete_users: false,
-    upgrade_kyc: false,
-    customer_support: false,
+    free_db_space: true,
     manage_wallet: true,
     approve_withdrawals: true,
-    manage_trading: false,
-    override_odds: false,
-    settle_matches: false,
-    view_fixtures: false,
-    live_feed_sync: false,
+    view_payment_logs: true,
     manage_referrals: true,
-    view_audit_logs: true,
-    view_analytics: true,
-    manage_subadmins: false,
-  },
-  'VIP Accounts Executive': {
-    view_dashboard: true,
-    create_games: false,
-    edit_games: false,
-    mix_booking: true,
-    override_tickets: true,
-    manage_users: true,
-    suspend_users: false,
-    delete_users: false,
-    upgrade_kyc: true,
+    adjust_commissions: true,
     customer_support: true,
-    manage_wallet: false,
-    approve_withdrawals: false,
-    manage_trading: false,
-    override_odds: false,
-    settle_matches: false,
-    view_fixtures: true,
-    live_feed_sync: false,
-    manage_referrals: true,
-    view_audit_logs: false,
-    view_analytics: true,
-    manage_subadmins: false,
+    broadcast_alerts: true,
+    view_audit_logs: true,
+    regulatory_compliance: true,
+    manage_subadmins: true,
   },
   'Full Operations Co-Admin': {
     view_dashboard: true,
+    view_analytics: true,
+    export_reports: true,
     create_games: true,
     edit_games: true,
+    script_goals: true,
+    script_cards: true,
+    control_match_clock: true,
     mix_booking: true,
+    view_bets: true,
     override_tickets: true,
+    void_cancel_bets: true,
+    settle_payouts: true,
     manage_users: true,
+    create_customer: true,
     suspend_users: true,
     delete_users: true,
+    purge_customers: false,
+    reset_passwords: true,
     upgrade_kyc: true,
-    customer_support: true,
-    manage_wallet: true,
-    approve_withdrawals: true,
+    adjust_balance: true,
     manage_trading: true,
+    suspend_markets: true,
     override_odds: true,
+    adjust_margins: true,
     settle_matches: true,
     view_fixtures: true,
     live_feed_sync: true,
+    free_db_space: true,
+    manage_wallet: true,
+    approve_withdrawals: true,
+    view_payment_logs: true,
     manage_referrals: true,
+    adjust_commissions: true,
+    customer_support: true,
+    broadcast_alerts: true,
     view_audit_logs: true,
+    regulatory_compliance: true,
+    manage_subadmins: false,
+  },
+  'Senior Trading & Odds Manager': {
+    view_dashboard: true,
     view_analytics: true,
+    export_reports: true,
+    create_games: true,
+    edit_games: true,
+    script_goals: true,
+    script_cards: true,
+    control_match_clock: true,
+    mix_booking: true,
+    view_bets: true,
+    override_tickets: true,
+    void_cancel_bets: true,
+    settle_payouts: true,
+    manage_users: false,
+    create_customer: false,
+    suspend_users: false,
+    delete_users: false,
+    purge_customers: false,
+    reset_passwords: false,
+    upgrade_kyc: false,
+    adjust_balance: false,
+    manage_trading: true,
+    suspend_markets: true,
+    override_odds: true,
+    adjust_margins: true,
+    settle_matches: true,
+    view_fixtures: true,
+    live_feed_sync: true,
+    free_db_space: false,
+    manage_wallet: false,
+    approve_withdrawals: false,
+    view_payment_logs: false,
+    manage_referrals: false,
+    adjust_commissions: false,
+    customer_support: false,
+    broadcast_alerts: false,
+    view_audit_logs: true,
+    regulatory_compliance: true,
+    manage_subadmins: false,
+  },
+  'Match Fixing & Scripting Specialist': {
+    view_dashboard: true,
+    view_analytics: false,
+    export_reports: false,
+    create_games: true,
+    edit_games: true,
+    script_goals: true,
+    script_cards: true,
+    control_match_clock: true,
+    mix_booking: true,
+    view_bets: true,
+    override_tickets: true,
+    void_cancel_bets: false,
+    settle_payouts: true,
+    manage_users: false,
+    create_customer: false,
+    suspend_users: false,
+    delete_users: false,
+    purge_customers: false,
+    reset_passwords: false,
+    upgrade_kyc: false,
+    adjust_balance: false,
+    manage_trading: true,
+    suspend_markets: true,
+    override_odds: false,
+    adjust_margins: false,
+    settle_matches: true,
+    view_fixtures: true,
+    live_feed_sync: false,
+    free_db_space: false,
+    manage_wallet: false,
+    approve_withdrawals: false,
+    view_payment_logs: false,
+    manage_referrals: false,
+    adjust_commissions: false,
+    customer_support: false,
+    broadcast_alerts: false,
+    view_audit_logs: false,
+    regulatory_compliance: false,
+    manage_subadmins: false,
+  },
+  'Bet Slip & Ticket Settlement Officer': {
+    view_dashboard: true,
+    view_analytics: false,
+    export_reports: true,
+    create_games: false,
+    edit_games: false,
+    script_goals: false,
+    script_cards: false,
+    control_match_clock: false,
+    mix_booking: true,
+    view_bets: true,
+    override_tickets: true,
+    void_cancel_bets: true,
+    settle_payouts: true,
+    manage_users: true,
+    create_customer: false,
+    suspend_users: false,
+    delete_users: false,
+    purge_customers: false,
+    reset_passwords: false,
+    upgrade_kyc: false,
+    adjust_balance: false,
+    manage_trading: false,
+    suspend_markets: false,
+    override_odds: false,
+    adjust_margins: false,
+    settle_matches: true,
+    view_fixtures: true,
+    live_feed_sync: false,
+    free_db_space: false,
+    manage_wallet: false,
+    approve_withdrawals: false,
+    view_payment_logs: false,
+    manage_referrals: false,
+    adjust_commissions: false,
+    customer_support: false,
+    broadcast_alerts: false,
+    view_audit_logs: false,
+    regulatory_compliance: false,
+    manage_subadmins: false,
+  },
+  'Customer Care & Player Support Lead': {
+    view_dashboard: true,
+    view_analytics: false,
+    export_reports: false,
+    create_games: false,
+    edit_games: false,
+    script_goals: false,
+    script_cards: false,
+    control_match_clock: false,
+    mix_booking: false,
+    view_bets: true,
+    override_tickets: true,
+    void_cancel_bets: false,
+    settle_payouts: false,
+    manage_users: true,
+    create_customer: true,
+    suspend_users: true,
+    delete_users: false,
+    purge_customers: false,
+    reset_passwords: true,
+    upgrade_kyc: true,
+    adjust_balance: false,
+    manage_trading: false,
+    suspend_markets: false,
+    override_odds: false,
+    adjust_margins: false,
+    settle_matches: false,
+    view_fixtures: true,
+    live_feed_sync: false,
+    free_db_space: false,
+    manage_wallet: false,
+    approve_withdrawals: false,
+    view_payment_logs: false,
+    manage_referrals: true,
+    adjust_commissions: false,
+    customer_support: true,
+    broadcast_alerts: true,
+    view_audit_logs: false,
+    regulatory_compliance: false,
+    manage_subadmins: false,
+  },
+  'KYC, Compliance & AML Auditor': {
+    view_dashboard: true,
+    view_analytics: true,
+    export_reports: true,
+    create_games: false,
+    edit_games: false,
+    script_goals: false,
+    script_cards: false,
+    control_match_clock: false,
+    mix_booking: false,
+    view_bets: true,
+    override_tickets: false,
+    void_cancel_bets: false,
+    settle_payouts: false,
+    manage_users: true,
+    create_customer: false,
+    suspend_users: true,
+    delete_users: false,
+    purge_customers: false,
+    reset_passwords: false,
+    upgrade_kyc: true,
+    adjust_balance: false,
+    manage_trading: false,
+    suspend_markets: false,
+    override_odds: false,
+    adjust_margins: false,
+    settle_matches: false,
+    view_fixtures: false,
+    live_feed_sync: false,
+    free_db_space: false,
+    manage_wallet: false,
+    approve_withdrawals: false,
+    view_payment_logs: true,
+    manage_referrals: false,
+    adjust_commissions: false,
+    customer_support: true,
+    broadcast_alerts: false,
+    view_audit_logs: true,
+    regulatory_compliance: true,
+    manage_subadmins: false,
+  },
+  'Treasury & Payout Controller': {
+    view_dashboard: true,
+    view_analytics: true,
+    export_reports: true,
+    create_games: false,
+    edit_games: false,
+    script_goals: false,
+    script_cards: false,
+    control_match_clock: false,
+    mix_booking: false,
+    view_bets: true,
+    override_tickets: false,
+    void_cancel_bets: true,
+    settle_payouts: true,
+    manage_users: false,
+    create_customer: false,
+    suspend_users: false,
+    delete_users: false,
+    purge_customers: false,
+    reset_passwords: false,
+    upgrade_kyc: false,
+    adjust_balance: true,
+    manage_trading: false,
+    suspend_markets: false,
+    override_odds: false,
+    adjust_margins: false,
+    settle_matches: false,
+    view_fixtures: false,
+    live_feed_sync: false,
+    free_db_space: false,
+    manage_wallet: true,
+    approve_withdrawals: true,
+    view_payment_logs: true,
+    manage_referrals: true,
+    adjust_commissions: false,
+    customer_support: false,
+    broadcast_alerts: false,
+    view_audit_logs: true,
+    regulatory_compliance: true,
+    manage_subadmins: false,
+  },
+  'Affiliate & Growth Manager': {
+    view_dashboard: true,
+    view_analytics: true,
+    export_reports: true,
+    create_games: false,
+    edit_games: false,
+    script_goals: false,
+    script_cards: false,
+    control_match_clock: false,
+    mix_booking: true,
+    view_bets: false,
+    override_tickets: false,
+    void_cancel_bets: false,
+    settle_payouts: false,
+    manage_users: true,
+    create_customer: true,
+    suspend_users: false,
+    delete_users: false,
+    purge_customers: false,
+    reset_passwords: false,
+    upgrade_kyc: false,
+    adjust_balance: false,
+    manage_trading: false,
+    suspend_markets: false,
+    override_odds: false,
+    adjust_margins: false,
+    settle_matches: false,
+    view_fixtures: true,
+    live_feed_sync: false,
+    free_db_space: false,
+    manage_wallet: false,
+    approve_withdrawals: false,
+    view_payment_logs: false,
+    manage_referrals: true,
+    adjust_commissions: true,
+    customer_support: false,
+    broadcast_alerts: true,
+    view_audit_logs: false,
+    regulatory_compliance: false,
     manage_subadmins: false,
   },
 };
+
+const PERMISSION_CATEGORIES = [
+  'All Categories',
+  'Dashboard & Reports',
+  'Games & Goal Scripting',
+  'Tickets & Payouts',
+  'Players & Accounts',
+  'Trading & Markets',
+  'Fixtures & Data Feed',
+  'Wallet & Treasury',
+  'Referrals & Growth',
+  'Support & Alerts',
+  'Security & Compliance',
+];
 
 export default function SubAdmins() {
   const {
@@ -305,10 +675,12 @@ export default function SubAdmins() {
   const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('SubAdmin@2026');
-  const [roleTitle, setRoleTitle] = useState('Match & Slip Creator');
+  const [roleTitle, setRoleTitle] = useState('Full Operations Co-Admin');
   const [permissions, setPermissions] = useState({
-    ...ROLE_PRESETS['Match & Slip Creator'],
+    ...ROLE_PRESETS['Full Operations Co-Admin'],
   });
+  const [selectedCategory, setSelectedCategory] = useState('All Categories');
+  const [permSearch, setPermSearch] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [syncing, setSyncing] = useState(false);
@@ -644,11 +1016,16 @@ export default function SubAdmins() {
           </div>
 
           {/* Granular Permission Checkboxes */}
-          <div className="space-y-2 pt-2">
+          <div className="space-y-2.5 pt-2">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-extrabold text-gray-900">
-                Limit What This Sub-Admin Can See & Do:
-              </p>
+              <div>
+                <p className="text-xs font-extrabold text-gray-900">
+                  Limit What This Sub-Admin Can See &amp; Do:
+                </p>
+                <p className="text-[10px] text-gray-500">
+                  {Object.values(permissions).filter(Boolean).length} of {PERMISSION_META.length} capabilities active
+                </p>
+              </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -673,8 +1050,49 @@ export default function SubAdmins() {
                 </button>
               </div>
             </div>
+
+            {/* Quick Search & Category Filter Pills */}
+            <div className="space-y-1.5">
+              <input
+                type="text"
+                value={permSearch}
+                onChange={(e) => setPermSearch(e.target.value)}
+                placeholder="Search capabilities (e.g. odds, kyc, goals, wallet)..."
+                className="w-full rounded-xl border border-gray-200 px-3 py-1.5 text-[11px]"
+              />
+              <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar text-[10px]">
+                {PERMISSION_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-2 py-0.5 rounded-lg font-bold shrink-0 transition ${
+                      selectedCategory === cat
+                        ? 'bg-[#00b074] text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="space-y-1.5 max-h-96 overflow-y-auto pr-1">
-              {PERMISSION_META.map((p) => (
+              {PERMISSION_META.filter((p) => {
+                if (selectedCategory !== 'All Categories' && p.category !== selectedCategory) {
+                  return false;
+                }
+                if (permSearch.trim()) {
+                  const q = permSearch.toLowerCase();
+                  return (
+                    p.label.toLowerCase().includes(q) ||
+                    p.desc.toLowerCase().includes(q) ||
+                    p.category.toLowerCase().includes(q)
+                  );
+                }
+                return true;
+              }).map((p) => (
                 <label
                   key={p.key}
                   className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
@@ -689,9 +1107,14 @@ export default function SubAdmins() {
                     onChange={() => togglePerm(p.key)}
                     className="accent-[#00b074] mt-0.5 w-4 h-4 rounded"
                   />
-                  <div>
-                    <p className="text-xs font-bold text-gray-900">{p.label}</p>
-                    <p className="text-[10px] text-gray-500">{p.desc}</p>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-xs font-bold text-gray-900">{p.label}</p>
+                      <span className="px-1.5 py-0.2 rounded bg-gray-200 text-gray-600 text-[9px] font-semibold">
+                        {p.category}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-0.5 leading-snug">{p.desc}</p>
                   </div>
                 </label>
               ))}
