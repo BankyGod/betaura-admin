@@ -58,12 +58,14 @@ export const ALL_PERMISSIONS = {
 export function AuthProvider({ children }) {
   // One-time cleanup of all previous admin & sub-admin accounts in localStorage
   try {
-    if (localStorage.getItem('betaura_superadmin_reset_v1') !== 'true') {
+    if (localStorage.getItem('betaura_superadmin_reset_v2026') !== 'true') {
       localStorage.removeItem('betaura_sub_admins');
       localStorage.removeItem('betaura_active_admin_profile');
       localStorage.removeItem('betaura_admin_token');
       localStorage.removeItem('betaura_super_admin_token');
-      localStorage.setItem('betaura_superadmin_reset_v1', 'true');
+      localStorage.removeItem('betaura_super_connected_account');
+      localStorage.setItem('betaura_admin_logged_out', 'true');
+      localStorage.setItem('betaura_superadmin_reset_v2026', 'true');
     }
   } catch {
     // ignore
