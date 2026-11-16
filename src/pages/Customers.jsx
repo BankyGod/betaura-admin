@@ -190,80 +190,16 @@ export default function Customers() {
           };
         });
         setCustomers(mapped);
+      } else {
+        setCustomers([]);
       }
-    } catch {
-      // Fallback if backend is mid-deploy: surface known connected BetAura player accounts & referred users
-      const fallbackMap = new Map();
-      const conn = admin?.connectedBetauraAccount;
-      if (conn && (conn.username || conn.phone_number)) {
-        const uname = (conn.username || '').toLowerCase();
-        if (uname !== 'thisissuperadmin' && conn.phone_number !== '+233540000001') {
-          const refInfo = resolveReferrer(conn, []);
-          fallbackMap.set(conn.user_id || conn.phone_number, {
-            id: conn.user_id || conn.phone_number,
-            name: conn.username || conn.phone_number,
-            username: conn.username || '',
-            phone: conn.phone_number || '',
-            email: '',
-            tier: 2,
-            levelName: LEVEL_LABELS[2],
-            status: 'KYC_APPROVED',
-            role: 'ROLE_PUNTER',
-            referralCode: conn.referral_code || '',
-            referredBy: conn.referred_by || null,
-            referralInfo: refInfo,
-            referred: Number(conn.total_invited || 0),
-            betsCount: 0,
-            balance: 0,
-            bonusBalance: Number(conn.bonus_balance || 0),
-            createdAt: conn.connected_at,
-          });
-        }
-        if (Array.isArray(conn.referred_people)) {
-          conn.referred_people.forEach((rp) => {
-            const key = rp.id || rp.phone;
-            if (key && !fallbackMap.has(key)) {
-              const tier = Number(rp.tier || 1);
-              fallbackMap.set(key, {
-                id: key,
-                name: rp.name || rp.username || rp.phone,
-                username: rp.username || '',
-                phone: rp.phone || '',
-                email: '',
-                tier,
-                levelName: LEVEL_LABELS[tier] || `Level ${tier}`,
-                status: rp.status || 'VERIFIED',
-                role: 'ROLE_PUNTER',
-                referralCode: '',
-                referredBy: conn.referral_code || null,
-                referralInfo: {
-                  isDirect: false,
-                  sourceLabel: conn.username || conn.phone_number,
-                  code: conn.referral_code,
-                  subAdmin: {
-                    id: conn.user_id,
-                    name: conn.username || conn.phone_number,
-                    username: conn.username || '',
-                    phone: conn.phone_number || '',
-                    roleTitle: 'Referrer',
-                    referral_code: conn.referral_code || '',
-                  },
-                },
-                referred: 0,
-                betsCount: 0,
-                balance: 0,
-                bonusBalance: 0,
-                createdAt: rp.joined,
-              });
-            }
-          });
-        }
-      }
-      setCustomers(Array.from(fallbackMap.values()));
+    } catch (err) {
+      console.error('Failed to load registered players from backend:', err);
+      setCustomers([]);
     } finally {
       setLoading(false);
     }
-  }, [admin?.connectedBetauraAccount, resolveReferrer]);
+  }, [resolveReferrer]);
 
   useEffect(() => {
     fetchBackendUsers();
