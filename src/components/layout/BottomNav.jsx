@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Home,
@@ -18,8 +18,10 @@ import {
   Sparkles,
   ShieldCheck,
   LogOut,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { adminApi } from '../../api/endpoints';
 
 const primaryTabs = [
   { to: '/', label: 'Home', icon: Home, end: true },
@@ -29,6 +31,7 @@ const primaryTabs = [
 ];
 
 const appMenuActions = [
+  { to: '/customer-care', label: 'Customer Support', icon: MessageSquare, color: 'bg-blue-50 text-[#2d9cdb]', perm: ['customer_support', 'broadcast_alerts', 'manage_subadmins'] },
   { to: '/custom-games', label: 'Create & Mix', icon: Sparkles, color: 'bg-emerald-50 text-[#0e9f47]', perm: ['create_games', 'mix_booking'] },
   { to: '/orders', label: 'Bet Tickets', icon: ListOrdered, color: 'bg-emerald-50 text-[#0e9f47]', perm: 'override_tickets' },
   { to: '/order-detail', label: 'Ticket → WON', icon: FileText, color: 'bg-blue-50 text-[#2d9cdb]', perm: 'override_tickets' },
@@ -40,13 +43,38 @@ const appMenuActions = [
   { to: '/analytics', label: 'Analytics', icon: BarChart2, color: 'bg-indigo-50 text-indigo-600', perm: 'view_analytics' },
   { to: '/referrals', label: 'Referrals', icon: UserCheck, color: 'bg-teal-50 text-teal-600', perm: 'view_dashboard' },
   { to: '/live-sync', label: 'Feed Sync', icon: RefreshCw, color: 'bg-indigo-50 text-indigo-600', perm: 'manage_trading' },
+  { to: '/audit-logs', label: 'Audit Logs', icon: Calendar, color: 'bg-slate-50 text-slate-700', perm: ['view_audit_logs', 'regulatory_compliance', 'view_dashboard'] },
   { to: '/settings', label: 'Settings', icon: Settings, color: 'bg-gray-100 text-gray-700' },
 ];
 
 export default function BottomNav() {
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [supportUnread, setSupportUnread] = useState(0);
   const navigate = useNavigate();
   const { admin, hasPermission, logoutAdmin } = useAuth();
+
+  // Poll for live unread customer support inquiries
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const res = await adminApi.getSupportThreads();
+        if (active && Array.isArray(res.data)) {
+          setSupportUnread(
+            res.data.reduce((sum, t) => sum + Number(t.unread_count || 0), 0)
+          );
+        }
+      } catch {
+        // ignore transient errors
+      }
+    };
+    load();
+    const interval = setInterval(load, 5000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   function handleLogout() {
     setSheetOpen(false);
@@ -90,24 +118,32 @@ export default function BottomNav() {
             </div>
 
             <div className="grid grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto">
-              {visibleActions.map(({ to, label, icon: Icon, color }) => (
-                <button
-                  key={to}
-                  type="button"
-                  onClick={() => {
-                    setSheetOpen(false);
-                    navigate(to);
-                  }}
-                  className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-gray-50/80 hover:bg-gray-100 active:scale-95 transition text-center"
-                >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <span className="text-[11px] font-semibold text-gray-800 leading-tight">
-                    {label}
-                  </span>
-                </button>
-              ))}
+              {visibleActions.map(({ to, label, icon: Icon, color }) => {
+                const isSupport = to === '/customer-care';
+                return (
+                  <button
+                    key={to}
+                    type="button"
+                    onClick={() => {
+                      setSheetOpen(false);
+                      navigate(to);
+                    }}
+                    className="relative flex flex-col items-center gap-2 p-3 rounded-2xl bg-gray-50/80 hover:bg-gray-100 active:scale-95 transition text-center"
+                  >
+                    {isSupport && supportUnread > 0 && (
+                      <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full bg-[#ff5b5b] text-white text-[9px] font-black shadow-xs">
+                        {supportUnread > 99 ? '99+' : supportUnread}
+                      </span>
+                    )}
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-semibold text-gray-800 leading-tight">
+                      {label}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
             <button
@@ -150,10 +186,13 @@ export default function BottomNav() {
           <button
             type="button"
             onClick={() => setSheetOpen((prev) => !prev)}
-            className={`flex flex-col items-center justify-center gap-1 py-1 rounded-xl text-[11px] font-semibold transition active:scale-95 ${
+            className={`relative flex flex-col items-center justify-center gap-1 py-1 rounded-xl text-[11px] font-semibold transition active:scale-95 ${
               sheetOpen ? 'text-[#0e9f47]' : 'text-gray-400 hover:text-gray-700'
             }`}
           >
+            {supportUnread > 0 && (
+              <span className="absolute top-0.5 right-4 w-2.5 h-2.5 rounded-full bg-[#ff5b5b] ring-2 ring-white animate-pulse" />
+            )}
             <LayoutGrid className="w-5 h-5" />
             <span>Tools</span>
           </button>
