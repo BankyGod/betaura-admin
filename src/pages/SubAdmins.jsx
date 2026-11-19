@@ -12,10 +12,16 @@ import {
   Search,
   Users,
   DollarSign,
+  Wallet,
+  ArrowDownRight,
+  PlusCircle,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { adminApi } from '../api/endpoints';
 import { formatCurrency } from '../utils/formatters';
+import FundBetAccountModal from '../components/modals/FundBetAccountModal';
+import WithdrawBetAccountModal from '../components/modals/WithdrawBetAccountModal';
+import WithdrawalSuccessModal from '../components/modals/WithdrawalSuccessModal';
 
 const PERMISSION_META = [
   // 1. Dashboard & Financial Intelligence
@@ -685,6 +691,9 @@ export default function SubAdmins() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [syncing, setSyncing] = useState(false);
   const [msg, setMsg] = useState('');
+  const [fundTarget, setFundTarget] = useState(null);
+  const [withdrawTarget, setWithdrawTarget] = useState(null);
+  const [successWithdrawData, setSuccessWithdrawData] = useState(null);
 
   useEffect(() => {
     refreshSubAdmins?.();
@@ -889,6 +898,26 @@ export default function SubAdmins() {
           <span className="px-3 py-1.5 rounded-xl bg-[#d9f3ea] text-[#00b074] text-xs font-extrabold">
             Active: {admin?.name} ({admin?.roleTitle || 'Super Admin'})
           </span>
+
+          {admin?.isSuperAdmin && (
+            <button
+              type="button"
+              onClick={() => setFundTarget(admin)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#00b074] hover:bg-[#0a873c] text-white px-3.5 py-1.5 text-xs font-extrabold transition shadow-xs"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>Fund My Bet Account</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setWithdrawTarget(admin)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-gray-900 hover:bg-black text-white px-3.5 py-1.5 text-xs font-extrabold transition shadow-xs"
+          >
+            <ArrowDownRight className="w-3.5 h-3.5" />
+            <span>Withdraw From My Account</span>
+          </button>
           {!admin?.isSuperAdmin && (
             <button
               type="button"
@@ -1221,6 +1250,10 @@ export default function SubAdmins() {
                           </strong>
                         </p>
                         <div className="flex flex-wrap items-center gap-3 mt-1.5">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <Wallet className="w-3.5 h-3.5 text-[#00b074]" />
+                            Bet Balance: {formatCurrency(Number(connAcc?.balance ?? sub.balance ?? 0))}
+                          </span>
                           <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#00b074]">
                             <DollarSign className="w-3 h-3" />
                             Referral Earnings: {formatCurrency(subRefEarnings)}
@@ -1241,6 +1274,30 @@ export default function SubAdmins() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
+                      {/* ONLY Super Admin can fund */}
+                      {admin?.isSuperAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => setFundTarget(sub)}
+                          className="inline-flex items-center gap-1 rounded-xl bg-[#00b074] hover:bg-[#0a873c] text-white px-3 py-1.5 text-xs font-extrabold transition shadow-xs"
+                          title="Credit real BetAura betting balance"
+                        >
+                          <PlusCircle className="w-3.5 h-3.5" />
+                          <span>Fund Bet Account</span>
+                        </button>
+                      )}
+
+                      {/* Super Admin or Sub-Admin can withdraw from connected account */}
+                      <button
+                        type="button"
+                        onClick={() => setWithdrawTarget(sub)}
+                        className="inline-flex items-center gap-1 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1.5 text-xs font-extrabold transition"
+                        title="Simulated ledger withdrawal"
+                      >
+                        <ArrowDownRight className="w-3.5 h-3.5 text-gray-600" />
+                        <span>Withdraw</span>
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => {
@@ -1343,6 +1400,43 @@ export default function SubAdmins() {
           )}
         </div>
       </div>
+
+      {/* Super Admin Fund Modal */}
+      {fundTarget && (
+        <FundBetAccountModal
+          isOpen={Boolean(fundTarget)}
+          target={fundTarget}
+          onClose={() => setFundTarget(null)}
+          onSuccess={(data) => {
+            setMsg(
+              `Successfully funded GH₵ ${data.amount} to ${data.username || 'user'}'s BetAura account. New balance: ${formatCurrency(data.new_balance)}.`
+            );
+            refreshSubAdmins?.();
+          }}
+        />
+      )}
+
+      {/* Withdraw Modal */}
+      {withdrawTarget && (
+        <WithdrawBetAccountModal
+          isOpen={Boolean(withdrawTarget)}
+          target={withdrawTarget}
+          onClose={() => setWithdrawTarget(null)}
+          onSuccess={(data) => {
+            setSuccessWithdrawData(data);
+            refreshSubAdmins?.();
+          }}
+        />
+      )}
+
+      {/* Withdrawal Success Modal */}
+      {successWithdrawData && (
+        <WithdrawalSuccessModal
+          isOpen={Boolean(successWithdrawData)}
+          data={successWithdrawData}
+          onClose={() => setSuccessWithdrawData(null)}
+        />
+      )}
     </div>
   );
 }

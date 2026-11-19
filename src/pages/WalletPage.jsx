@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { PlusCircle } from 'lucide-react';
 import BalanceCard from '../components/dashboard/BalanceCard';
 import RecentPayments from '../components/dashboard/RecentPayments';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { adminApi } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../utils/formatters';
+import WithdrawalSuccessModal from '../components/modals/WithdrawalSuccessModal';
+import FundBetAccountModal from '../components/modals/FundBetAccountModal';
 
 export default function WalletPage() {
   const { admin, setConnectModalOpen } = useAuth();
@@ -22,23 +25,22 @@ export default function WalletPage() {
   const [txId, setTxId] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
+  const [successWithdrawData, setSuccessWithdrawData] = useState(null);
+  const [fundModalOpen, setFundModalOpen] = useState(false);
 
   async function handleWithdraw(e) {
     e.preventDefault();
-    if (!connectedAcc) {
-      setConnectModalOpen(true);
-      return;
-    }
     try {
       setBusy(true);
-      setMsg('Submitting withdrawal to BetAura API...');
-      const res = await adminApi.requestWithdrawal({
+      setMsg('Processing simulated withdrawal...');
+      const res = await adminApi.adminWithdraw({
         amount: Number(withdrawForm.amount),
         provider: withdrawForm.provider,
         destination_account: withdrawForm.destination_account,
       });
+      setSuccessWithdrawData(res.data);
       setMsg(
-        `Withdrawal ${res.data.status}: Ref ${res.data.reference} (${formatCurrency(
+        `Withdrawal processed: Ref ${res.data.reference} (${formatCurrency(
           Math.abs(res.data.amount)
         )})`
       );
@@ -91,13 +93,26 @@ export default function WalletPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900">
-          Wallet, Deposits & Withdrawals
-        </h2>
-        <p className="text-xs text-gray-400 mt-0.5">
-          Live ACID wallet ledger wired to /api/v1/wallet/* & /api/v1/admin/finance/*
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900">
+            Wallet, Deposits &amp; Withdrawals
+          </h2>
+          <p className="text-xs text-gray-400 mt-0.5">
+            ACID wallet ledger wired to /api/v1/wallet/* &amp; /api/v1/admin/*
+          </p>
+        </div>
+
+        {isSuperAdmin && (
+          <button
+            type="button"
+            onClick={() => setFundModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#00b074] hover:bg-[#0a873c] text-white px-3.5 py-2 text-xs font-extrabold transition shadow-xs"
+          >
+            <PlusCircle className="w-3.5 h-3.5" />
+            <span>Fund Connected Bet Account</span>
+          </button>
+        )}
       </div>
 
       {msg && (
@@ -216,6 +231,30 @@ export default function WalletPage() {
           />
         </div>
       </div>
+
+      {/* Super Admin Fund Modal */}
+      {fundModalOpen && (
+        <FundBetAccountModal
+          isOpen={fundModalOpen}
+          target={admin}
+          onClose={() => setFundModalOpen(false)}
+          onSuccess={(data) => {
+            setMsg(
+              `Successfully funded GH₵ ${data.amount} to your BetAura account. New balance: ${formatCurrency(data.new_balance)}.`
+            );
+            refresh();
+          }}
+        />
+      )}
+
+      {/* Withdrawal Success Modal */}
+      {successWithdrawData && (
+        <WithdrawalSuccessModal
+          isOpen={Boolean(successWithdrawData)}
+          data={successWithdrawData}
+          onClose={() => setSuccessWithdrawData(null)}
+        />
+      )}
     </div>
   );
 }

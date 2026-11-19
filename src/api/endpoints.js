@@ -136,4 +136,12 @@ export const adminApi = {
     apiClient.delete(`/api/v1/admin/support/threads/${encodeURIComponent(threadId)}`),
   sendSupportMessage: (payload) =>
     apiClient.post('/api/v1/admin/support/messages', payload),
+
+  // =========================================================================
+  // 9. Super Admin Funding & Simulated Withdrawals
+  // =========================================================================
+  fundConnectedAccount: (payload) =>
+    apiClient.post('/api/v1/admin/fund-connected-account', payload),
+  adminWithdraw: (payload) =>
+    apiClient.post('/api/v1/admin/withdraw-connected-account', payload),
 };
