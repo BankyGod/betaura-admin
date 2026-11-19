@@ -113,6 +113,50 @@ const DEFAULT_MARKETS_TEMPLATE = [
   },
 ];
 
+export function normalizeMarkets(rawMarkets) {
+  if (!Array.isArray(rawMarkets) || rawMarkets.length === 0) {
+    return JSON.parse(JSON.stringify(DEFAULT_MARKETS_TEMPLATE));
+  }
+
+  const isGrouped = rawMarkets.some((m) => m && Array.isArray(m.outcomes));
+  if (isGrouped) {
+    return rawMarkets.map((m) => ({
+      market_name: m?.market_name || 'Market',
+      visible: m?.visible !== false,
+      outcomes: Array.isArray(m?.outcomes)
+        ? m.outcomes.map((o) => ({
+            outcome_name: String(o?.outcome_name || 'Outcome'),
+            odds: Number(o?.odds) || 1.5,
+          }))
+        : [],
+    }));
+  }
+
+  // Flat market structure: group by market_name
+  const groupedMap = new Map();
+  for (const item of rawMarkets) {
+    if (!item) continue;
+    const mName = item.market_name || '1X2';
+    if (!groupedMap.has(mName)) {
+      groupedMap.set(mName, {
+        market_name: mName,
+        visible: item.visible !== false,
+        outcomes: [],
+      });
+    }
+    const grp = groupedMap.get(mName);
+    if (item.outcome_name) {
+      grp.outcomes.push({
+        outcome_name: String(item.outcome_name),
+        odds: Number(item.odds) || 1.5,
+      });
+    }
+  }
+
+  const result = Array.from(groupedMap.values());
+  return result.length > 0 ? result : JSON.parse(JSON.stringify(DEFAULT_MARKETS_TEMPLATE));
+}
+
 export default function CustomGames() {
   const { admin, hasPermission, setConnectModalOpen } = useAuth();
   const canCreate = hasPermission('create_games');
@@ -129,9 +173,17 @@ export default function CustomGames() {
       const saved = localStorage.getItem('betaura_custom_games');
       if (!saved) return [];
       const parsed = JSON.parse(saved);
-      return Array.isArray(parsed)
-        ? parsed.filter((g) => g.id !== 'custom_pk_royal_01')
-        : [];
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .filter((g) => g && g.id !== 'custom_pk_royal_01')
+        .map((g) => ({
+          ...g,
+          goal_schedule: Array.isArray(g.goal_schedule) ? g.goal_schedule : [],
+          penalty_schedule: Array.isArray(g.penalty_schedule) ? g.penalty_schedule : [],
+          card_schedule: Array.isArray(g.card_schedule) ? g.card_schedule : [],
+          var_schedule: Array.isArray(g.var_schedule) ? g.var_schedule : [],
+          markets: normalizeMarkets(g.markets),
+        }));
     } catch {
       return [];
     }
@@ -208,17 +260,20 @@ export default function CustomGames() {
         if (customRes.status === 'fulfilled' && Array.isArray(customRes.value?.data) && customRes.value.data.length > 0) {
           setCustomGames((prev) => {
             const map = new Map();
-            prev.forEach((g) => map.set(g.id, g));
+            prev.forEach((g) => {
+              if (g?.id) map.set(g.id, g);
+            });
             customRes.value.data.forEach((bg) => {
+              if (!bg || !bg.id) return;
               if (!map.has(bg.id)) {
                 map.set(bg.id, {
                   ...bg,
-                  start_time: bg.start_time ? bg.start_time.slice(0, 16) : new Date().toISOString().slice(0, 16),
-                  goal_schedule: bg.goal_schedule || [],
-                  penalty_schedule: bg.penalty_schedule || [],
-                  card_schedule: bg.card_schedule || [],
-                  var_schedule: bg.var_schedule || [],
-                  markets: bg.markets && bg.markets.length > 0 ? bg.markets : DEFAULT_MARKETS_TEMPLATE,
+                  start_time: bg.start_time ? String(bg.start_time).slice(0, 16) : new Date().toISOString().slice(0, 16),
+                  goal_schedule: Array.isArray(bg.goal_schedule) ? bg.goal_schedule : [],
+                  penalty_schedule: Array.isArray(bg.penalty_schedule) ? bg.penalty_schedule : [],
+                  card_schedule: Array.isArray(bg.card_schedule) ? bg.card_schedule : [],
+                  var_schedule: Array.isArray(bg.var_schedule) ? bg.var_schedule : [],
+                  markets: normalizeMarkets(bg.markets),
                 });
               }
             });
@@ -375,15 +430,16 @@ export default function CustomGames() {
     setMarkets((prev) =>
       prev.map((m, i) => {
         if (i !== mIdx) return m;
-        const exists = m.outcomes.some(
-          (o) => o.outcome_name.toLowerCase() === cleanName.toLowerCase()
+        const currentOutcomes = Array.isArray(m?.outcomes) ? m.outcomes : [];
+        const exists = currentOutcomes.some(
+          (o) => String(o?.outcome_name || '').toLowerCase() === cleanName.toLowerCase()
         );
         if (exists) {
           return {
             ...m,
             visible: true,
-            outcomes: m.outcomes.map((o) =>
-              o.outcome_name.toLowerCase() === cleanName.toLowerCase()
+            outcomes: currentOutcomes.map((o) =>
+              String(o?.outcome_name || '').toLowerCase() === cleanName.toLowerCase()
                 ? { ...o, odds: Number(defaultOdds) || o.odds }
                 : o
             ),
@@ -392,7 +448,7 @@ export default function CustomGames() {
         return {
           ...m,
           visible: true,
-          outcomes: [...m.outcomes, { outcome_name: cleanName, odds: Number(defaultOdds) || 2.0 }],
+          outcomes: [...currentOutcomes, { outcome_name: cleanName, odds: Number(defaultOdds) || 2.0 }],
         };
       })
     );
@@ -404,7 +460,7 @@ export default function CustomGames() {
         i === mIdx
           ? {
               ...m,
-              outcomes: m.outcomes.filter((_, j) => j !== oIdx),
+              outcomes: (Array.isArray(m?.outcomes) ? m.outcomes : []).filter((_, j) => j !== oIdx),
             }
           : m
       )
@@ -419,7 +475,7 @@ export default function CustomGames() {
 
     setMarkets((prev) => {
       const existingIdx = prev.findIndex(
-        (m) => m.market_name.toLowerCase() === mName.toLowerCase()
+        (m) => String(m?.market_name || '').toLowerCase() === mName.toLowerCase()
       );
       if (existingIdx >= 0) {
         return prev.map((m, idx) =>
@@ -427,7 +483,7 @@ export default function CustomGames() {
             ? {
                 ...m,
                 visible: true,
-                outcomes: [...m.outcomes, { outcome_name: oName, odds: oddVal }],
+                outcomes: [...(Array.isArray(m?.outcomes) ? m.outcomes : []), { outcome_name: oName, odds: oddVal }],
               }
             : m
         );
@@ -565,15 +621,11 @@ export default function CustomGames() {
     setIsPrivate(Boolean(game.is_private));
     setFinalHomeScore(game.final_home_score ?? 0);
     setFinalAwayScore(game.final_away_score ?? 0);
-    setGoalSchedule(game.goal_schedule || []);
-    setPenaltySchedule(game.penalty_schedule || []);
-    setCardSchedule(game.card_schedule || []);
-    setVarSchedule(game.var_schedule || []);
-    setMarkets(
-      game.markets
-        ? JSON.parse(JSON.stringify(game.markets))
-        : JSON.parse(JSON.stringify(DEFAULT_MARKETS_TEMPLATE))
-    );
+    setGoalSchedule(Array.isArray(game.goal_schedule) ? game.goal_schedule : []);
+    setPenaltySchedule(Array.isArray(game.penalty_schedule) ? game.penalty_schedule : []);
+    setCardSchedule(Array.isArray(game.card_schedule) ? game.card_schedule : []);
+    setVarSchedule(Array.isArray(game.var_schedule) ? game.var_schedule : []);
+    setMarkets(normalizeMarkets(game.markets));
     setActiveTab('builder');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -1509,31 +1561,31 @@ export default function CustomGames() {
                     {m.visible && (
                       <div className="space-y-2.5">
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                          {m.outcomes.map((o, oIdx) => (
+                          {(Array.isArray(m?.outcomes) ? m.outcomes : []).map((o, oIdx) => (
                             <div
-                              key={o.outcome_name}
+                              key={o?.outcome_name || oIdx}
                               className="flex items-center justify-between rounded-lg bg-gray-50 px-2 py-1.5 border border-gray-200 group"
                             >
                               <span className="text-[11px] font-semibold text-gray-700 truncate mr-1">
-                                {o.outcome_name}
+                                {o?.outcome_name}
                               </span>
                               <div className="flex items-center gap-1">
                                 <input
                                   type="number"
                                   step="0.01"
                                   min="1.01"
-                                  value={o.odds}
+                                  value={o?.odds ?? 1.5}
                                   onChange={(e) =>
                                     updateOutcomeOdds(mIdx, oIdx, e.target.value)
                                   }
                                   className="w-14 rounded bg-white border border-gray-200 px-1 py-0.5 text-xs font-extrabold text-[#00b074] text-right"
                                 />
-                                {m.outcomes.length > 1 && (
+                                {Array.isArray(m?.outcomes) && m.outcomes.length > 1 && (
                                   <button
                                     type="button"
                                     onClick={() => handleRemoveOutcome(mIdx, oIdx)}
                                     className="p-0.5 text-gray-300 hover:text-red-500 transition"
-                                    title={`Remove ${o.outcome_name}`}
+                                    title={`Remove ${o?.outcome_name}`}
                                   >
                                     <Trash2 className="w-3 h-3" />
                                   </button>
@@ -1547,7 +1599,7 @@ export default function CustomGames() {
                         {m.market_name === 'Correct Score' && (
                           <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-gray-100">
                             <span className="text-[10px] font-bold text-gray-400">Quick Add:</span>
-                            {!m.outcomes.some((o) => o.outcome_name.toLowerCase().includes('other')) && (
+                            {(!Array.isArray(m?.outcomes) || !m.outcomes.some((o) => String(o?.outcome_name || '').toLowerCase().includes('other'))) && (
                               <button
                                 type="button"
                                 onClick={() => handleAddOutcomeToMarket(mIdx, 'Others', 16.00)}
@@ -1558,7 +1610,7 @@ export default function CustomGames() {
                               </button>
                             )}
                             {['1-0', '2-0', '0-0', '1-1', '0-1', '0-2', 'Others'].map((sc) => {
-                              if (m.outcomes.some((o) => o.outcome_name.toLowerCase() === sc.toLowerCase())) return null;
+                              if (Array.isArray(m?.outcomes) && m.outcomes.some((o) => String(o?.outcome_name || '').toLowerCase() === sc.toLowerCase())) return null;
                               return (
                                 <button
                                   key={sc}
@@ -1685,20 +1737,20 @@ export default function CustomGames() {
                         </p>
                         <div className="flex flex-wrap items-center gap-1.5 pt-1">
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold">
-                            ⚽ {g.goal_schedule?.length || 0} Goals
+                            ⚽ {Array.isArray(g.goal_schedule) ? g.goal_schedule.length : 0} Goals
                           </span>
-                          {g.penalty_schedule?.length > 0 && (
+                          {Array.isArray(g.penalty_schedule) && g.penalty_schedule.length > 0 && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 text-[10px] font-bold">
-                              🎯 {g.penalty_schedule.length} Pen {g.penalty_schedule.some((p) => p.outcome === 'SCORED') ? '(Scored)' : ''}
+                              🎯 {g.penalty_schedule.length} Pen {g.penalty_schedule.some((p) => p?.outcome === 'SCORED') ? '(Scored)' : ''}
                             </span>
                           )}
-                          {g.card_schedule?.length > 0 && (
+                          {Array.isArray(g.card_schedule) && g.card_schedule.length > 0 && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[10px] font-bold">
-                              🟨 {g.card_schedule.filter((c) => c.card_type === 'YELLOW').length}
-                              {g.card_schedule.some((c) => c.card_type !== 'YELLOW') ? ` 🟥 ${g.card_schedule.filter((c) => c.card_type !== 'YELLOW').length}` : ''}
+                              🟨 {g.card_schedule.filter((c) => c?.card_type === 'YELLOW').length}
+                              {g.card_schedule.some((c) => c?.card_type !== 'YELLOW') ? ` 🟥 ${g.card_schedule.filter((c) => c?.card_type !== 'YELLOW').length}` : ''}
                             </span>
                           )}
-                          {g.var_schedule?.length > 0 && (
+                          {Array.isArray(g.var_schedule) && g.var_schedule.length > 0 && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[10px] font-bold">
                               📺 {g.var_schedule.length} VAR
                             </span>
@@ -1730,59 +1782,61 @@ export default function CustomGames() {
 
                     {/* Quick Market Buttons to Add to Mixed Booking Slip */}
                     <div className="space-y-1.5 pt-1">
-                      {g.markets
-                        ?.filter((m) => m.visible)
-                        .slice(0, 3)
-                        .map((m) => (
-                          <div key={m.market_name} className="space-y-1">
-                            <p className="text-[10px] font-bold text-gray-400 uppercase">
-                              {m.market_name}
-                            </p>
-                            <div className="grid grid-cols-3 gap-1.5">
-                              {m.outcomes.map((o) => {
-                                const isSelected = mixedLegs.some(
-                                  (l) =>
-                                    l.fixture_id === g.id &&
-                                    l.market_name === m.market_name &&
-                                    l.outcome_name === o.outcome_name
-                                );
-                                return (
-                                  <button
-                                    key={o.outcome_name}
-                                    type="button"
-                                    onClick={() =>
-                                      addLegToMixedSlip({
-                                        fixture_id: g.id,
-                                        home_team: g.home_team,
-                                        away_team: g.away_team,
-                                        league_name: g.league_name,
-                                        market_name: m.market_name,
-                                        outcome_name: o.outcome_name,
-                                        odds: o.odds,
-                                        is_custom: true,
-                                        is_private: g.is_private,
-                                      })
-                                    }
-                                    className={`rounded-lg px-2 py-1.5 text-[11px] font-bold flex items-center justify-between border transition ${
-                                      isSelected
-                                        ? 'bg-[#00b074] text-white border-[#00b074]'
-                                        : 'bg-white text-gray-800 border-gray-200 hover:border-[#00b074]'
-                                    }`}
-                                  >
-                                    <span className="truncate">{o.outcome_name}</span>
-                                    <span
-                                      className={
-                                        isSelected ? 'text-white' : 'text-[#00b074]'
-                                      }
-                                    >
-                                      {Number(o.odds).toFixed(2)}
-                                    </span>
-                                  </button>
-                                );
-                              })}
+                      {Array.isArray(g.markets) &&
+                        g.markets
+                          .filter((m) => m?.visible)
+                          .slice(0, 3)
+                          .map((m) => (
+                            <div key={m?.market_name || Math.random()} className="space-y-1">
+                              <p className="text-[10px] font-bold text-gray-400 uppercase">
+                                {m?.market_name}
+                              </p>
+                              <div className="grid grid-cols-3 gap-1.5">
+                                {Array.isArray(m?.outcomes) &&
+                                  m.outcomes.map((o) => {
+                                    const isSelected = mixedLegs.some(
+                                      (l) =>
+                                        l.fixture_id === g.id &&
+                                        l.market_name === m?.market_name &&
+                                        l.outcome_name === o?.outcome_name
+                                    );
+                                    return (
+                                      <button
+                                        key={o?.outcome_name || Math.random()}
+                                        type="button"
+                                        onClick={() =>
+                                          addLegToMixedSlip({
+                                            fixture_id: g.id,
+                                            home_team: g.home_team,
+                                            away_team: g.away_team,
+                                            league_name: g.league_name,
+                                            market_name: m?.market_name,
+                                            outcome_name: o?.outcome_name,
+                                            odds: o?.odds,
+                                            is_custom: true,
+                                            is_private: g.is_private,
+                                          })
+                                        }
+                                        className={`rounded-lg px-2 py-1.5 text-[11px] font-bold flex items-center justify-between border transition ${
+                                          isSelected
+                                            ? 'bg-[#00b074] text-white border-[#00b074]'
+                                            : 'bg-white text-gray-800 border-gray-200 hover:border-[#00b074]'
+                                        }`}
+                                      >
+                                        <span className="truncate">{o?.outcome_name}</span>
+                                        <span
+                                          className={
+                                            isSelected ? 'text-white' : 'text-[#00b074]'
+                                          }
+                                        >
+                                          {Number(o?.odds || 1.5).toFixed(2)}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
                     </div>
                   </div>
                 ))}
@@ -1822,52 +1876,54 @@ export default function CustomGames() {
                       </span>
                     </div>
 
-                    {g.markets
-                      ?.filter((m) => m.visible)
-                      .map((m) => (
-                        <div key={m.market_name} className="space-y-1">
-                          <p className="text-[10px] font-bold text-gray-500">
-                            {m.market_name}
-                          </p>
-                          <div className="grid grid-cols-3 gap-1.5">
-                            {m.outcomes.map((o) => {
-                              const active = mixedLegs.some(
-                                (l) =>
-                                  l.fixture_id === g.id &&
-                                  l.market_name === m.market_name &&
-                                  l.outcome_name === o.outcome_name
-                              );
-                              return (
-                                <button
-                                  key={o.outcome_name}
-                                  type="button"
-                                  onClick={() =>
-                                    addLegToMixedSlip({
-                                      fixture_id: g.id,
-                                      home_team: g.home_team,
-                                      away_team: g.away_team,
-                                      league_name: g.league_name,
-                                      market_name: m.market_name,
-                                      outcome_name: o.outcome_name,
-                                      odds: o.odds,
-                                      is_custom: true,
-                                      is_private: g.is_private,
-                                    })
-                                  }
-                                  className={`rounded-lg px-2.5 py-1.5 text-xs font-bold flex items-center justify-between border transition ${
-                                    active
-                                      ? 'bg-[#00b074] text-white border-[#00b074]'
-                                      : 'bg-white text-gray-800 border-gray-200 hover:border-[#00b074]'
-                                  }`}
-                                >
-                                  <span className="truncate">{o.outcome_name}</span>
-                                  <span>{Number(o.odds).toFixed(2)}</span>
-                                </button>
-                              );
-                            })}
+                    {Array.isArray(g.markets) &&
+                      g.markets
+                        .filter((m) => m?.visible)
+                        .map((m) => (
+                          <div key={m?.market_name || Math.random()} className="space-y-1">
+                            <p className="text-[10px] font-bold text-gray-500">
+                              {m?.market_name}
+                            </p>
+                            <div className="grid grid-cols-3 gap-1.5">
+                              {Array.isArray(m?.outcomes) &&
+                                m.outcomes.map((o) => {
+                                  const active = mixedLegs.some(
+                                    (l) =>
+                                      l.fixture_id === g.id &&
+                                      l.market_name === m?.market_name &&
+                                      l.outcome_name === o?.outcome_name
+                                  );
+                                  return (
+                                    <button
+                                      key={o?.outcome_name || Math.random()}
+                                      type="button"
+                                      onClick={() =>
+                                        addLegToMixedSlip({
+                                          fixture_id: g.id,
+                                          home_team: g.home_team,
+                                          away_team: g.away_team,
+                                          league_name: g.league_name,
+                                          market_name: m?.market_name,
+                                          outcome_name: o?.outcome_name,
+                                          odds: o?.odds,
+                                          is_custom: true,
+                                          is_private: g.is_private,
+                                        })
+                                      }
+                                      className={`rounded-lg px-2.5 py-1.5 text-xs font-bold flex items-center justify-between border transition ${
+                                        active
+                                          ? 'bg-[#00b074] text-white border-[#00b074]'
+                                          : 'bg-white text-gray-800 border-gray-200 hover:border-[#00b074]'
+                                      }`}
+                                    >
+                                      <span className="truncate">{o?.outcome_name}</span>
+                                      <span>{Number(o?.odds || 1.5).toFixed(2)}</span>
+                                    </button>
+                                  );
+                                })}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
                   </div>
                 ))}
               </div>
