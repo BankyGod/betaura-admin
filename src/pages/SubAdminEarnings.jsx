@@ -21,6 +21,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../utils/formatters';
 import FundBetAccountModal from '../components/modals/FundBetAccountModal';
+import AdjustCommissionModal from '../components/modals/AdjustCommissionModal';
 import { Link } from 'react-router-dom';
 
 export default function SubAdminEarnings() {
@@ -39,6 +40,7 @@ export default function SubAdminEarnings() {
   const [copiedCode, setCopiedCode] = useState(null);
   const [fundTarget, setFundTarget] = useState(null);
   const [inspectPuntersSub, setInspectPuntersSub] = useState(null);
+  const [commissionTarget, setCommissionTarget] = useState(null);
 
   useEffect(() => {
     setSyncing(true);
@@ -312,6 +314,7 @@ export default function SubAdminEarnings() {
               <tr className="bg-gray-50/60 border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
                 <th className="py-3 px-4">Sub-Admin</th>
                 <th className="py-3 px-4">Referral Code</th>
+                <th className="py-3 px-4 text-center">Commission Rate</th>
                 <th className="py-3 px-4 text-center">Punters Invited</th>
                 <th className="py-3 px-4 text-right">Referral Earnings</th>
                 <th className="py-3 px-4 text-right">Active Bonus Wallet</th>
@@ -323,7 +326,7 @@ export default function SubAdminEarnings() {
             <tbody className="divide-y divide-gray-100 text-xs">
               {filteredSubs.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-gray-400">
+                  <td colSpan={9} className="py-12 text-center text-gray-400">
                     <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                     <p className="font-bold text-sm text-gray-600">No Sub-Admins Found</p>
                     <p className="text-xs text-gray-400 mt-0.5">
@@ -400,6 +403,26 @@ export default function SubAdminEarnings() {
                         </div>
                       </td>
 
+                      {/* Commission Rate */}
+                      <td className="py-3.5 px-4 text-center">
+                        <div className="inline-flex items-center gap-1.5">
+                          <span className="px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-extrabold text-xs flex items-center gap-1 shadow-xs">
+                            <Percent className="w-3 h-3 text-purple-600 stroke-[2.5]" />
+                            <span>{sub.commission_rate ?? sub.commission_percentage ?? 70}%</span>
+                          </span>
+                          {isSuperAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => setCommissionTarget(sub)}
+                              className="text-gray-400 hover:text-purple-600 p-1 rounded-lg hover:bg-purple-50 transition-colors cursor-pointer"
+                              title="Super Admin: Increase or reduce commission percentage"
+                            >
+                              <Percent className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+
                       {/* Punters Invited */}
                       <td className="py-3.5 px-4 text-center">
                         <button
@@ -455,6 +478,17 @@ export default function SubAdminEarnings() {
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {isSuperAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => setCommissionTarget(sub)}
+                              className="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-bold text-[11px] rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                              title="Increase or reduce sub-admin commission percentage"
+                            >
+                              <Percent className="w-3 h-3 text-purple-600" />
+                              <span>Adjust %</span>
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => setInspectPuntersSub(sub)}
@@ -584,7 +618,9 @@ export default function SubAdminEarnings() {
             })()}
 
             <div className="pt-4 border-t border-gray-100 mt-4 flex items-center justify-between text-xs text-gray-500">
-              <span>Commission: 50% first-deposit share</span>
+              <span className="font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200">
+                Sub-Admin Commission: {inspectPuntersSub?.commission_rate ?? inspectPuntersSub?.commission_percentage ?? 70}% on all deposits
+              </span>
               <button
                 type="button"
                 onClick={() => setInspectPuntersSub(null)}
@@ -595,6 +631,18 @@ export default function SubAdminEarnings() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Adjust Commission Rate Modal */}
+      {commissionTarget && (
+        <AdjustCommissionModal
+          isOpen={Boolean(commissionTarget)}
+          target={commissionTarget}
+          onClose={() => setCommissionTarget(null)}
+          onSuccess={(updated) => {
+            refreshSubAdmins?.();
+          }}
+        />
       )}
     </div>
   );

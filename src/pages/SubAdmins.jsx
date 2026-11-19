@@ -16,6 +16,7 @@ import {
   Wallet,
   ArrowDownRight,
   PlusCircle,
+  Percent,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { adminApi } from '../api/endpoints';
@@ -23,6 +24,7 @@ import { formatCurrency } from '../utils/formatters';
 import FundBetAccountModal from '../components/modals/FundBetAccountModal';
 import WithdrawBetAccountModal from '../components/modals/WithdrawBetAccountModal';
 import WithdrawalSuccessModal from '../components/modals/WithdrawalSuccessModal';
+import AdjustCommissionModal from '../components/modals/AdjustCommissionModal';
 
 const PERMISSION_META = [
   // 1. Dashboard & Financial Intelligence
@@ -741,6 +743,8 @@ export default function SubAdmins() {
   const [fundTarget, setFundTarget] = useState(null);
   const [withdrawTarget, setWithdrawTarget] = useState(null);
   const [successWithdrawData, setSuccessWithdrawData] = useState(null);
+  const [commissionRate, setCommissionRate] = useState(70);
+  const [commissionTarget, setCommissionTarget] = useState(null);
 
   useEffect(() => {
     setSyncing(true);
@@ -792,6 +796,7 @@ export default function SubAdmins() {
         role_title: roleTitle,
         status: 'ACTIVE',
         permissions: fullPerms,
+        commission_rate: Number(commissionRate) || 70,
       });
 
       if (res?.data) {
@@ -1130,6 +1135,31 @@ export default function SubAdmins() {
                 </select>
               </div>
             </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-gray-700 mb-1 flex items-center justify-between">
+                <span>Referral Commission Percentage</span>
+                <span className="text-purple-600 font-extrabold">{commissionRate}%</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  step="1"
+                  value={commissionRate}
+                  onChange={(e) => setCommissionRate(Math.max(1, Math.min(100, Number(e.target.value) || 0)))}
+                  className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs font-bold text-gray-900"
+                  placeholder="70"
+                />
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-extrabold text-xs">
+                  %
+                </span>
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1">
+                Sub-admin receives <b>{commissionRate}%</b> on <b>every deposit</b> made by people they refer. Default: <b>70%</b>.
+              </p>
+            </div>
           </div>
 
           {/* Granular Permission Checkboxes */}
@@ -1336,6 +1366,10 @@ export default function SubAdmins() {
                           <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-mono text-[10px] font-bold">
                             Ref: {subRefCode}
                           </span>
+                          <span className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-extrabold text-[10px] flex items-center gap-1">
+                            <Percent className="w-3 h-3 text-purple-600 stroke-[2.5]" />
+                            {sub.commission_rate ?? sub.commission_percentage ?? 70}% Commission
+                          </span>
                         </div>
                         <p className="text-xs text-gray-400 mt-0.5">
                           @{sub.username} • {sub.phone_number || sub.phone} •{' '}
@@ -1368,6 +1402,19 @@ export default function SubAdmins() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
+                      {/* ONLY Super Admin can adjust commission rate */}
+                      {admin?.isSuperAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => setCommissionTarget(sub)}
+                          className="inline-flex items-center gap-1 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 text-xs font-extrabold transition cursor-pointer shadow-xs"
+                          title="Increase or reduce this Sub-Admin's deposit commission percentage"
+                        >
+                          <Percent className="w-3.5 h-3.5 text-purple-600" />
+                          <span>Adjust % ({sub.commission_rate ?? sub.commission_percentage ?? 70}%)</span>
+                        </button>
+                      )}
+
                       {/* ONLY Super Admin can fund */}
                       {admin?.isSuperAdmin && (
                         <button
@@ -1529,6 +1576,24 @@ export default function SubAdmins() {
           isOpen={Boolean(successWithdrawData)}
           data={successWithdrawData}
           onClose={() => setSuccessWithdrawData(null)}
+        />
+      )}
+
+      {/* Adjust Commission Rate Modal */}
+      {commissionTarget && (
+        <AdjustCommissionModal
+          isOpen={Boolean(commissionTarget)}
+          target={commissionTarget}
+          onClose={() => setCommissionTarget(null)}
+          onSuccess={(updated) => {
+            setSubAdmins((prev) =>
+              prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s))
+            );
+            setMsg(
+              `Successfully updated referral commission rate for @${updated.username || updated.name} to ${updated.commission_rate}%!`
+            );
+            refreshSubAdmins?.();
+          }}
         />
       )}
     </div>

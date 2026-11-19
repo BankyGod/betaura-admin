@@ -108,6 +108,11 @@ export const adminApi = {
       `/api/v1/admin/sub-admins/${encodeURIComponent(subId)}/connect-betaura`,
       payload
     ),
+  updateSubAdminCommission: (subId, payload) =>
+    apiClient.post(
+      `/api/v1/admin/sub-admins/${encodeURIComponent(subId)}/commission-rate`,
+      payload
+    ),
   suspendMarket: (payload) =>
     apiClient.post('/api/v1/admin/trading/suspend-market', payload),
   unsuspendMarket: (payload) =>

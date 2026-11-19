@@ -610,6 +610,24 @@ export function AuthProvider({ children }) {
     }
   }
 
+  async function updateSubAdminCommission(subId, commissionRate) {
+    const rateNum = Number(commissionRate);
+    const res = await adminApi.updateSubAdminCommission(subId, {
+      commission_rate: rateNum,
+    });
+    if (res && res.data) {
+      const updated = res.data;
+      setSubAdmins((prev) =>
+        prev.map((s) => (s.id === subId ? { ...s, ...updated } : s))
+      );
+      if (admin?.id === subId) {
+        setAdmin((prev) => ({ ...prev, ...updated }));
+      }
+      return updated;
+    }
+    return null;
+  }
+
   function logoutAdmin() {
     try {
       localStorage.removeItem('betaura_admin_token');
@@ -649,6 +667,7 @@ export function AuthProvider({ children }) {
         changeSubAdminPassword,
         connectBetauraAccount,
         disconnectBetauraAccount,
+        updateSubAdminCommission,
         connectModalOpen,
         setConnectModalOpen,
         refreshProfile: hydrateSession,
