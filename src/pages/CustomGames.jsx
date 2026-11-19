@@ -88,10 +88,18 @@ const DEFAULT_MARKETS_TEMPLATE = [
     market_name: 'Correct Score',
     visible: true,
     outcomes: [
-      { outcome_name: '2-1', odds: 9.50 },
+      { outcome_name: '1-0', odds: 7.50 },
       { outcome_name: '2-0', odds: 8.00 },
-      { outcome_name: '1-1', odds: 6.50 },
+      { outcome_name: '2-1', odds: 9.50 },
+      { outcome_name: '3-0', odds: 15.00 },
       { outcome_name: '3-1', odds: 14.00 },
+      { outcome_name: '0-0', odds: 9.00 },
+      { outcome_name: '1-1', odds: 6.50 },
+      { outcome_name: '2-2', odds: 13.00 },
+      { outcome_name: '0-1', odds: 8.50 },
+      { outcome_name: '0-2', odds: 12.00 },
+      { outcome_name: '1-2', odds: 11.00 },
+      { outcome_name: 'Others', odds: 16.00 },
     ],
   },
   {
@@ -355,6 +363,48 @@ export default function CustomGames() {
               outcomes: m.outcomes.map((o, j) =>
                 j === oIdx ? { ...o, odds: parseFloat(val) || 1.01 } : o
               ),
+            }
+          : m
+      )
+    );
+  }
+
+  function handleAddOutcomeToMarket(mIdx, outcomeName, defaultOdds = 2.0) {
+    if (!outcomeName || !outcomeName.trim()) return;
+    const cleanName = outcomeName.trim();
+    setMarkets((prev) =>
+      prev.map((m, i) => {
+        if (i !== mIdx) return m;
+        const exists = m.outcomes.some(
+          (o) => o.outcome_name.toLowerCase() === cleanName.toLowerCase()
+        );
+        if (exists) {
+          return {
+            ...m,
+            visible: true,
+            outcomes: m.outcomes.map((o) =>
+              o.outcome_name.toLowerCase() === cleanName.toLowerCase()
+                ? { ...o, odds: Number(defaultOdds) || o.odds }
+                : o
+            ),
+          };
+        }
+        return {
+          ...m,
+          visible: true,
+          outcomes: [...m.outcomes, { outcome_name: cleanName, odds: Number(defaultOdds) || 2.0 }],
+        };
+      })
+    );
+  }
+
+  function handleRemoveOutcome(mIdx, oIdx) {
+    setMarkets((prev) =>
+      prev.map((m, i) =>
+        i === mIdx
+          ? {
+              ...m,
+              outcomes: m.outcomes.filter((_, j) => j !== oIdx),
             }
           : m
       )
@@ -1457,27 +1507,71 @@ export default function CustomGames() {
                     </label>
 
                     {m.visible && (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {m.outcomes.map((o, oIdx) => (
-                          <div
-                            key={o.outcome_name}
-                            className="flex items-center justify-between rounded-lg bg-gray-50 px-2.5 py-1.5 border border-gray-200"
-                          >
-                            <span className="text-[11px] font-semibold text-gray-700 truncate mr-1">
-                              {o.outcome_name}
-                            </span>
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="1.01"
-                              value={o.odds}
-                              onChange={(e) =>
-                                updateOutcomeOdds(mIdx, oIdx, e.target.value)
-                              }
-                              className="w-16 rounded bg-white border border-gray-200 px-1.5 py-0.5 text-xs font-extrabold text-[#00b074] text-right"
-                            />
+                      <div className="space-y-2.5">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {m.outcomes.map((o, oIdx) => (
+                            <div
+                              key={o.outcome_name}
+                              className="flex items-center justify-between rounded-lg bg-gray-50 px-2 py-1.5 border border-gray-200 group"
+                            >
+                              <span className="text-[11px] font-semibold text-gray-700 truncate mr-1">
+                                {o.outcome_name}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="1.01"
+                                  value={o.odds}
+                                  onChange={(e) =>
+                                    updateOutcomeOdds(mIdx, oIdx, e.target.value)
+                                  }
+                                  className="w-14 rounded bg-white border border-gray-200 px-1 py-0.5 text-xs font-extrabold text-[#00b074] text-right"
+                                />
+                                {m.outcomes.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveOutcome(mIdx, oIdx)}
+                                    className="p-0.5 text-gray-300 hover:text-red-500 transition"
+                                    title={`Remove ${o.outcome_name}`}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Special Quick Action for Correct Score: Add Others & Common Scores */}
+                        {m.market_name === 'Correct Score' && (
+                          <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-gray-100">
+                            <span className="text-[10px] font-bold text-gray-400">Quick Add:</span>
+                            {!m.outcomes.some((o) => o.outcome_name.toLowerCase().includes('other')) && (
+                              <button
+                                type="button"
+                                onClick={() => handleAddOutcomeToMarket(mIdx, 'Others', 16.00)}
+                                className="px-2.5 py-1 rounded-md bg-[#d9f3ea] text-[#00b074] text-[10px] font-extrabold hover:bg-[#b5e7d8] transition flex items-center gap-1 shadow-2xs"
+                              >
+                                <Plus className="w-3 h-3" />
+                                <span>+ Add &quot;Others&quot; (Any Other Score)</span>
+                              </button>
+                            )}
+                            {['1-0', '2-0', '0-0', '1-1', '0-1', '0-2', 'Others'].map((sc) => {
+                              if (m.outcomes.some((o) => o.outcome_name.toLowerCase() === sc.toLowerCase())) return null;
+                              return (
+                                <button
+                                  key={sc}
+                                  type="button"
+                                  onClick={() => handleAddOutcomeToMarket(mIdx, sc, sc === 'Others' ? 16.00 : 8.00)}
+                                  className="px-2 py-0.5 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] font-bold transition"
+                                >
+                                  + {sc}
+                                </button>
+                              );
+                            })}
                           </div>
-                        ))}
+                        )}
                       </div>
                     )}
                   </div>
