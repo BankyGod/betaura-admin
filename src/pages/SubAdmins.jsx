@@ -281,6 +281,47 @@ const PERMISSION_META = [
 ];
 
 const ROLE_PRESETS = {
+  'Match & Slip Creator (Restricted)': {
+    view_dashboard: true,
+    view_analytics: true,
+    export_reports: false,
+    create_games: true,
+    edit_games: true,
+    script_goals: true,
+    script_cards: true,
+    control_match_clock: false,
+    mix_booking: true,
+    view_bets: true,
+    override_tickets: false,
+    void_cancel_bets: false,
+    settle_payouts: false,
+    manage_users: false,
+    create_customer: false,
+    suspend_users: false,
+    delete_users: false,
+    purge_customers: false,
+    reset_passwords: false,
+    upgrade_kyc: false,
+    adjust_balance: false,
+    manage_trading: false,
+    suspend_markets: false,
+    override_odds: false,
+    adjust_margins: false,
+    settle_matches: false,
+    view_fixtures: true,
+    live_feed_sync: false,
+    free_db_space: false,
+    manage_wallet: false,
+    approve_withdrawals: false,
+    view_payment_logs: false,
+    manage_referrals: true,
+    adjust_commissions: false,
+    customer_support: false,
+    broadcast_alerts: false,
+    view_audit_logs: false,
+    regulatory_compliance: false,
+    manage_subadmins: false,
+  },
   'Super Administrator (Full)': {
     view_dashboard: true,
     view_analytics: true,
@@ -682,9 +723,14 @@ export default function SubAdmins() {
   const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('SubAdmin@2026');
-  const [roleTitle, setRoleTitle] = useState('Full Operations Co-Admin');
-  const [permissions, setPermissions] = useState({
-    ...ROLE_PRESETS['Full Operations Co-Admin'],
+  const [roleTitle, setRoleTitle] = useState('Match & Slip Creator (Restricted)');
+  const [permissions, setPermissions] = useState(() => {
+    const full = {};
+    const preset = ROLE_PRESETS['Match & Slip Creator (Restricted)'] || {};
+    PERMISSION_META.forEach((p) => {
+      full[p.key] = Boolean(preset[p.key]);
+    });
+    return full;
   });
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [permSearch, setPermSearch] = useState('');
@@ -713,9 +759,12 @@ export default function SubAdmins() {
 
   function handlePresetChange(presetName) {
     setRoleTitle(presetName);
-    if (ROLE_PRESETS[presetName]) {
-      setPermissions({ ...ROLE_PRESETS[presetName] });
-    }
+    const preset = ROLE_PRESETS[presetName] || {};
+    const full = {};
+    PERMISSION_META.forEach((p) => {
+      full[p.key] = Boolean(preset[p.key]);
+    });
+    setPermissions(full);
   }
 
   function togglePerm(key) {
@@ -728,6 +777,12 @@ export default function SubAdmins() {
     const cleanUsername = username.trim();
     if (!cleanUsername) return;
 
+    // Explicitly map all permissions as booleans so backend never injects high-authority defaults
+    const fullPerms = {};
+    PERMISSION_META.forEach((p) => {
+      fullPerms[p.key] = Boolean(permissions[p.key]);
+    });
+
     setSyncing(true);
     setMsg('');
     try {
@@ -736,7 +791,7 @@ export default function SubAdmins() {
         name: name.trim() || cleanUsername,
         role_title: roleTitle,
         status: 'ACTIVE',
-        permissions: permissions,
+        permissions: fullPerms,
       });
 
       if (res?.data) {
@@ -766,33 +821,47 @@ export default function SubAdmins() {
     }
   }
 
-  function handleToggleSubPermission(subId, permKey) {
+  async function handleToggleSubPermission(subId, permKey) {
     if (!canManageSubs) return;
+    const target = subAdmins.find((s) => s.id === subId);
+    if (!target) return;
+
+    // Build explicit full map for all capabilities
+    const fullPerms = {};
+    PERMISSION_META.forEach((p) => {
+      fullPerms[p.key] = p.key === permKey ? !target.permissions?.[p.key] : Boolean(target.permissions?.[p.key]);
+    });
+
     setSubAdmins((prev) =>
-      prev.map((s) => {
-        if (s.id !== subId) return s;
-        const updatedPerms = {
-          ...s.permissions,
-          [permKey]: !s.permissions?.[permKey],
-        };
-        if (admin?.id === subId) {
-          switchActiveAdmin({ ...s, permissions: updatedPerms });
-        }
-        adminApi
-          .saveSubAdmin({
-            id: s.id,
-            name: s.name,
-            username: s.username,
-            phone_number: s.phone_number || s.phone || '+233540009999',
-            password: s.password || 'SubAdmin@2026',
-            role_title: s.roleTitle || s.role || 'Sub-Admin',
-            status: s.status || 'ACTIVE',
-            permissions: updatedPerms,
-          })
-          .catch(() => {});
-        return { ...s, permissions: updatedPerms };
-      })
+      prev.map((s) => (s.id === subId ? { ...s, permissions: fullPerms } : s))
     );
+
+    if (admin?.id === subId) {
+      switchActiveAdmin({ ...target, permissions: fullPerms });
+    }
+
+    try {
+      const res = await adminApi.saveSubAdmin({
+        id: target.id,
+        name: target.name,
+        username: target.username,
+        phone_number: target.phone_number || target.phone || '',
+        password: target.password || 'SubAdmin@2026',
+        role_title: target.roleTitle || target.role || 'Sub-Admin',
+        status: target.status || 'ACTIVE',
+        permissions: fullPerms,
+      });
+      if (res?.data) {
+        setSubAdmins((prev) =>
+          prev.map((s) => (s.id === subId ? { ...s, ...res.data, permissions: fullPerms } : s))
+        );
+      }
+    } catch (err) {
+      setSubAdmins((prev) =>
+        prev.map((s) => (s.id === subId ? target : s))
+      );
+      setMsg(`Failed to update capability: ${err.message || 'Error'}`);
+    }
   }
 
   function handleToggleSubStatus(sub) {
@@ -1091,7 +1160,13 @@ export default function SubAdmins() {
                 <span className="text-gray-300">•</span>
                 <button
                   type="button"
-                  onClick={() => setPermissions({})}
+                  onClick={() => {
+                    const allFalse = {};
+                    PERMISSION_META.forEach((p) => {
+                      allFalse[p.key] = false;
+                    });
+                    setPermissions(allFalse);
+                  }}
                   className="text-[11px] font-semibold text-gray-400 hover:text-gray-600 cursor-pointer"
                 >
                   Clear All

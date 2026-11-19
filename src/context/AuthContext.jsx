@@ -55,6 +55,48 @@ export const ALL_PERMISSIONS = {
   manage_subadmins: true,
 };
 
+export const DEFAULT_SUBADMIN_PERMISSIONS = {
+  view_dashboard: true,
+  view_analytics: true,
+  export_reports: false,
+  create_games: true,
+  edit_games: true,
+  script_goals: true,
+  script_cards: true,
+  control_match_clock: false,
+  mix_booking: true,
+  view_bets: true,
+  override_tickets: false,
+  void_cancel_bets: false,
+  settle_payouts: false,
+  manage_users: false,
+  create_customer: false,
+  suspend_users: false,
+  delete_users: false,
+  purge_customers: false,
+  reset_passwords: false,
+  upgrade_kyc: false,
+  adjust_balance: false,
+  manage_trading: false,
+  suspend_markets: false,
+  override_odds: false,
+  adjust_margins: false,
+  settle_matches: false,
+  view_fixtures: true,
+  live_feed_sync: false,
+  free_db_space: false,
+  manage_wallet: false,
+  approve_withdrawals: false,
+  view_payment_logs: false,
+  manage_referrals: true,
+  adjust_commissions: false,
+  customer_support: false,
+  broadcast_alerts: false,
+  view_audit_logs: false,
+  regulatory_compliance: false,
+  manage_subadmins: false,
+};
+
 export function AuthProvider({ children }) {
   // One-time cleanup of all previous admin & sub-admin accounts in localStorage
   try {
@@ -373,9 +415,12 @@ export function AuthProvider({ children }) {
       phone_number: userProfile?.phone_number || matchedSub?.phone_number || rawId,
       initial: (userProfile?.username || rawId)[0].toUpperCase(),
       role: 'ROLE_SUB_ADMIN',
-      roleTitle: matchedSub?.roleTitle || matchedSub?.role_title || 'Full Operations Co-Admin',
+      roleTitle: matchedSub?.roleTitle || matchedSub?.role_title || 'Match & Slip Creator',
       status: matchedSub?.status || 'ACTIVE',
-      permissions: matchedSub?.permissions || { ...ALL_PERMISSIONS },
+      permissions:
+        matchedSub?.permissions && typeof matchedSub.permissions === 'object' && Object.keys(matchedSub.permissions).length > 0
+          ? matchedSub.permissions
+          : { ...DEFAULT_SUBADMIN_PERMISSIONS },
       connectedBetauraAccount: matchedSub?.connectedBetauraAccount || matchedSub?.connected_betaura_account || {
         user_id: String(userProfile?.id || ''),
         username: userProfile?.username || rawId,
