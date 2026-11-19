@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, CheckCircle2, Clock, Ticket, Sparkles } from 'lucide-react';
+import { Search, CheckCircle2, Clock, Ticket, Sparkles, Edit3 } from 'lucide-react';
 import { adminApi } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../utils/formatters';
+import EditSlipModal from '../components/modals/EditSlipModal';
 
 export default function OrderDetail() {
   const [searchParams] = useSearchParams();
@@ -19,6 +20,7 @@ export default function OrderDetail() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [overrideMsg, setOverrideMsg] = useState('');
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   async function verifyCodeNow(targetCode) {
     if (!targetCode.trim()) return;
@@ -285,11 +287,20 @@ export default function OrderDetail() {
                 {ticket.status}
               </span>
 
+              <button
+                type="button"
+                onClick={() => setEditModalOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-gray-900 hover:bg-gray-800 text-white px-3.5 py-2 text-xs font-extrabold shadow-xs transition cursor-pointer"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-[#00b074]" />
+                <span>Edit Slip &amp; Scores</span>
+              </button>
+
               {ticket.status !== 'WON' && canOverride && (
                 <button
                   type="button"
                   onClick={handleFlipTicketToWon}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#00b074] hover:bg-[#0a873c] text-white px-4 py-2 text-xs font-extrabold shadow-xs transition"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#00b074] hover:bg-[#0a873c] text-white px-4 py-2 text-xs font-extrabold shadow-xs transition cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Update Lost Ticket to WON</span>
@@ -380,6 +391,18 @@ export default function OrderDetail() {
           </div>
         </div>
       )}
+
+      <EditSlipModal
+        isOpen={editModalOpen}
+        ticket={ticket}
+        onClose={() => setEditModalOpen(false)}
+        onSaved={(updated) => {
+          setTicket(updated);
+          setOverrideMsg(
+            `Slip #${updated.id || updated.ticket_number} successfully updated! Match scores & outcomes saved.`
+          );
+        }}
+      />
     </div>
   );
 }

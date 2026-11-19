@@ -82,6 +82,11 @@ export const adminApi = {
       `/api/v1/admin/tickets/${encodeURIComponent(ticketIdentifier)}/mark-won`,
       payload
     ),
+  editTicket: (ticketIdentifier, payload) =>
+    apiClient.post(
+      `/api/v1/admin/tickets/${encodeURIComponent(ticketIdentifier)}/edit`,
+      payload
+    ),
   getCustomGames: () => apiClient.get('/api/v1/admin/custom-games'),
   createCustomGame: (payload) =>
     apiClient.post('/api/v1/admin/custom-games', payload),

@@ -46,9 +46,12 @@ export default function Home() {
         <BalanceCard
           totalBalance={data.totalBalance}
           todayGain={periodGain}
+          liveFunds={data.liveFunds}
+          liveFundsToday={data.liveFundsToday}
           label={isSuperAdmin ? 'Total Balance' : 'Referral Earnings'}
           subLabel={isSuperAdmin ? selectedPeriod : `${selectedPeriod} (From Referrals)`}
           onWithdraw={() => navigate(isSuperAdmin ? '/wallet' : '/referrals')}
+          isSuperAdmin={isSuperAdmin}
         />
         <EarningsSummary
           today={data.earnings.today}
@@ -150,9 +153,12 @@ export default function Home() {
             <BalanceCard
               totalBalance={data.totalBalance}
               todayGain={periodGain}
+              liveFunds={data.liveFunds}
+              liveFundsToday={data.liveFundsToday}
               label={isSuperAdmin ? 'Total Balance' : 'Referral Earnings'}
               subLabel={isSuperAdmin ? selectedPeriod : `${selectedPeriod} (From Referrals)`}
               onWithdraw={() => navigate(isSuperAdmin ? '/wallet' : '/referrals')}
+              isSuperAdmin={isSuperAdmin}
             />
             <EarningsSummary
               today={data.earnings.today}

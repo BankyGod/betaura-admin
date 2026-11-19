@@ -12,6 +12,10 @@ export function useDashboardData() {
 
   const [data, setData] = useState({
     totalBalance: 0,
+    liveFunds: 0,
+    liveFundsToday: 0,
+    liveFundsWeek: 0,
+    liveFundsMonth: 0,
     bonusBalance: 0,
     currency: 'GH₵',
     todayGain: 0,
@@ -291,6 +295,10 @@ export function useDashboardData() {
           const ov = overviewRes.value.data;
           next.totalBalance = Number(ov.total_balance ?? 0);
           next.todayGain = Number(ov.today_gain ?? 0);
+          next.liveFunds = Number(ov.live_funds ?? 0);
+          next.liveFundsToday = Number(ov.live_funds_today ?? 0);
+          next.liveFundsWeek = Number(ov.live_funds_week ?? 0);
+          next.liveFundsMonth = Number(ov.live_funds_month ?? 0);
           if (ov.earnings) {
             next.earnings = {
               today: Number(ov.earnings.today ?? 0),

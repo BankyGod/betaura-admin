@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RefreshCw, CheckCircle2, Search } from 'lucide-react';
+import { RefreshCw, CheckCircle2, Search, Edit3 } from 'lucide-react';
 import { adminApi } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../utils/formatters';
+import EditSlipModal from '../components/modals/EditSlipModal';
 
 const statusFilters = ['ALL', 'LOST', 'PENDING', 'ONGOING', 'WON', 'CASHED_OUT'];
 
@@ -21,6 +22,14 @@ export default function Orders() {
   const [manualTicketId, setManualTicketId] = useState('');
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState('');
+  const [editingTicket, setEditingTicket] = useState(null);
+
+  function handleTicketSaved(updated) {
+    setOrders((prev) =>
+      prev.map((ord) => (ord.id === updated.id ? { ...ord, ...updated } : ord))
+    );
+    setMsg(`Slip #${updated.id} successfully updated! Match scores and outcomes saved.`);
+  }
 
   const fetchBets = useCallback(async () => {
     try {
@@ -351,18 +360,29 @@ export default function Orders() {
                 </div>
               </div>
 
-              {o.status !== 'WON' && canOverride && (
-                <div className="pt-2 border-t border-gray-100 flex justify-end">
+              <div className="pt-2 border-t border-gray-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingTicket(o);
+                  }}
+                  className="inline-flex items-center gap-1 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1.5 text-[11px] font-bold shadow-xs cursor-pointer"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-[#00b074]" />
+                  <span>Edit Slip</span>
+                </button>
+                {o.status !== 'WON' && canOverride && (
                   <button
                     type="button"
                     onClick={(e) => handleUpdateTicketToWon(e, o)}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#00b074] text-white px-3 py-1.5 text-[11px] font-extrabold shadow-xs"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#00b074] text-white px-3 py-1.5 text-[11px] font-extrabold shadow-xs cursor-pointer"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Update Lost Ticket → WON</span>
+                    <span>Update → WON</span>
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           ))
         )}
@@ -427,19 +447,30 @@ export default function Orders() {
                         {o.status}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 text-right">
+                    <td className="px-5 py-3.5 text-right space-x-1.5 whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingTicket(o);
+                        }}
+                        className="inline-flex items-center gap-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 px-2.5 py-1.5 text-[11px] font-bold transition shadow-xs cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-[#00b074]" />
+                        <span>Edit Slip</span>
+                      </button>
                       {o.status !== 'WON' && canOverride ? (
                         <button
                           type="button"
                           onClick={(e) => handleUpdateTicketToWon(e, o)}
-                          className="inline-flex items-center gap-1 rounded-lg bg-[#00b074] hover:bg-[#0a873c] text-white px-3 py-1.5 text-[11px] font-bold transition shadow-xs"
+                          className="inline-flex items-center gap-1 rounded-lg bg-[#00b074] hover:bg-[#0a873c] text-white px-3 py-1.5 text-[11px] font-bold transition shadow-xs cursor-pointer"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>Update to WON</span>
                         </button>
                       ) : (
                         <span className="text-[11px] font-bold text-[#00b074]">
-                          ✓ Settled WON
+                          ✓ Settled {o.status}
                         </span>
                       )}
                     </td>
@@ -450,6 +481,13 @@ export default function Orders() {
           </table>
         </div>
       </div>
+
+      <EditSlipModal
+        isOpen={Boolean(editingTicket)}
+        ticket={editingTicket}
+        onClose={() => setEditingTicket(null)}
+        onSaved={handleTicketSaved}
+      />
     </div>
   );
 }

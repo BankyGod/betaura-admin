@@ -126,8 +126,11 @@ export default function WalletPage() {
           <BalanceCard
             totalBalance={data.totalBalance}
             todayGain={data.todayGain}
+            liveFunds={data.liveFunds}
+            liveFundsToday={data.liveFundsToday}
             label={isSuperAdmin ? 'Total Balance' : 'Total Referral Earnings'}
             subLabel={isSuperAdmin ? 'Today' : 'Referral Bonus Today'}
+            isSuperAdmin={isSuperAdmin}
           />
 
           {/* Request Withdrawal (/api/v1/wallet/withdraw) */}
