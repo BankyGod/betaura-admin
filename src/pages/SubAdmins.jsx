@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   ShieldCheck,
   UserPlus,
@@ -890,6 +891,14 @@ export default function SubAdmins() {
             <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} />
             <span>Refresh All Sub-Admins</span>
           </button>
+
+          <Link
+            to="/sub-admin-earnings"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-800 px-3 py-1.5 text-xs font-extrabold transition shadow-xs"
+          >
+            <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Track Referral Moneymaking &rarr;</span>
+          </Link>
 
           <span className="px-3 py-1.5 rounded-xl bg-[#d9f3ea] text-[#00b074] text-xs font-extrabold">
             Active: {admin?.name} ({admin?.roleTitle || 'Super Admin'})

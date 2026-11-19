@@ -15,6 +15,7 @@ import {
   Crown,
   Sparkles,
   ShieldCheck,
+  DollarSign,
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -55,6 +56,7 @@ const navItems = [
     ],
   },
   { to: '/sub-admins', label: 'Sub-Admins & Roles', icon: ShieldCheck, perm: 'manage_subadmins' },
+  { to: '/sub-admin-earnings', label: 'Sub-Admin Moneymaking', icon: DollarSign, perm: 'manage_subadmins' },
   { to: '/analytics', label: 'Analytics', icon: BarChart2, perm: ['view_analytics', 'export_reports', 'view_dashboard'] },
   { to: '/referrals', label: 'Referrals (70%)', icon: Star, perm: ['manage_referrals', 'adjust_commissions', 'view_dashboard'] },
   { to: '/fixtures', label: 'Fixtures & Odds', icon: Trophy, perm: ['view_fixtures', 'manage_trading', 'free_db_space'] },

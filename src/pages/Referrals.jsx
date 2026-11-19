@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Copy, Check, Gift } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Copy, Check, Gift, DollarSign, TrendingUp } from 'lucide-react';
 import ReferralBanner from '../components/dashboard/ReferralBanner';
 import RecentPayments from '../components/dashboard/RecentPayments';
 import ReferredPeopleList from '../components/dashboard/ReferredPeopleList';
@@ -52,13 +53,25 @@ export default function Referrals() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900">
-          Referrals Program
-        </h2>
-        <p className="text-xs text-gray-400 mt-0.5">
-          Live referral metrics from /api/v1/referral/stats (50% on invitee&apos;s first deposit)
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900">
+            Referrals Program
+          </h2>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Live referral metrics from /api/v1/referral/stats (50% on invitee&apos;s first deposit)
+          </p>
+        </div>
+
+        {isSuperAdmin && (
+          <Link
+            to="/sub-admin-earnings"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs cursor-pointer transition-all self-start sm:self-auto"
+          >
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>Track All Sub-Admin Moneymaking &rarr;</span>
+          </Link>
+        )}
       </div>
 
       <ReferralBanner count={totalInvited} />

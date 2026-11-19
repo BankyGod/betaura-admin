@@ -17,6 +17,7 @@ import Settings from './pages/Settings';
 import Login from './pages/Login';
 import CustomGames from './pages/CustomGames';
 import SubAdmins from './pages/SubAdmins';
+import SubAdminEarnings from './pages/SubAdminEarnings';
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/custom-games" element={<CustomGames />} />
             <Route path="/sub-admins" element={<SubAdmins />} />
+            <Route path="/sub-admin-earnings" element={<SubAdminEarnings />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/order-detail" element={<OrderDetail />} />
             <Route path="/customers" element={<Customers />} />

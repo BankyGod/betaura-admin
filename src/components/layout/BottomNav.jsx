@@ -17,6 +17,7 @@ import {
   Wallet,
   Sparkles,
   ShieldCheck,
+  DollarSign,
   LogOut,
   MessageSquare,
 } from 'lucide-react';
@@ -37,6 +38,7 @@ const appMenuActions = [
   { to: '/order-detail', label: 'Ticket → WON', icon: FileText, color: 'bg-blue-50 text-[#2d9cdb]', perm: 'override_tickets' },
   { to: '/customers', label: 'Players & Tiers', icon: Users, color: 'bg-purple-50 text-purple-600', perm: 'manage_users' },
   { to: '/sub-admins', label: 'Sub-Admins', icon: ShieldCheck, color: 'bg-amber-50 text-amber-600', perm: 'manage_subadmins' },
+  { to: '/sub-admin-earnings', label: 'Sub-Admin Moneymaking', icon: DollarSign, color: 'bg-emerald-50 text-emerald-600', perm: 'manage_subadmins' },
   { to: '/fixtures', label: 'Live Fixtures', icon: Trophy, color: 'bg-amber-50 text-amber-600', perm: 'manage_trading' },
   { to: '/trading', label: 'Trading Desk', icon: Sliders, color: 'bg-red-50 text-[#ff5b5b]', perm: 'manage_trading' },
   { to: '/wallet', label: 'Wallet & Payout', icon: Wallet, color: 'bg-emerald-50 text-[#0e9f47]', perm: 'manage_wallet' },
