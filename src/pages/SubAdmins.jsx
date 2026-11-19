@@ -723,49 +723,44 @@ export default function SubAdmins() {
   async function handleCreateSubAdmin(e) {
     e.preventDefault();
     if (!canManageSubs) return;
-    if (!name.trim() || !username.trim()) return;
+    const cleanUsername = username.trim();
+    if (!cleanUsername) return;
 
-    const newSub = {
-      id: `sub-${Date.now()}`,
-      name: name.trim(),
-      username: username.trim(),
-      phone_number: phone.trim() || '+233540009999',
-      password,
-      role: 'ROLE_SUB_ADMIN',
-      roleTitle,
-      status: 'ACTIVE',
-      referral_code: `AURA-${username.trim().slice(0, 6).toUpperCase()}`,
-      total_referrals: 0,
-      referral_earnings: 0,
-      permissions: { ...permissions },
-    };
-
-    setSubAdmins((prev) => [newSub, ...prev]);
-    setName('');
-    setUsername('');
-    setPhone('');
-    setMsg(
-      `Created Sub-Admin "${newSub.name}" (${newSub.roleTitle}) with custom access limits!`
-    );
-
+    setSyncing(true);
+    setMsg('');
     try {
       const res = await adminApi.saveSubAdmin({
-        id: newSub.id,
-        name: newSub.name,
-        username: newSub.username,
-        phone_number: newSub.phone_number,
-        password: newSub.password,
-        role_title: newSub.roleTitle,
+        username: cleanUsername,
+        name: name.trim() || cleanUsername,
+        role_title: roleTitle,
         status: 'ACTIVE',
-        permissions: newSub.permissions,
+        permissions: permissions,
       });
-      if (res?.data?.id) {
-        setSubAdmins((prev) =>
-          prev.map((s) => (s.id === newSub.id ? { ...s, ...res.data } : s))
+
+      if (res?.data) {
+        const created = res.data;
+        setSubAdmins((prev) => {
+          const filtered = prev.filter(
+            (s) =>
+              s.username?.toLowerCase() !== cleanUsername.toLowerCase() &&
+              s.id !== created.id
+          );
+          return [created, ...filtered];
+        });
+        setUsername('');
+        setName('');
+        setMsg(
+          `Sub-Admin @${created.username || cleanUsername} successfully linked! Their BetAura betting account is auto-connected, and they can log into the Admin portal using their BetAura credentials.`
         );
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      const errorMsg =
+        err.response?.data?.detail ||
+        err.message ||
+        'Failed to add Sub-Admin. Please make sure the username exists on BetAura.';
+      setMsg(`Error: ${errorMsg}`);
+    } finally {
+      setSyncing(false);
     }
   }
 
@@ -989,58 +984,72 @@ export default function SubAdmins() {
           onSubmit={handleCreateSubAdmin}
           className="xl:col-span-5 bg-white rounded-2xl p-5 sm:p-6 shadow-xs border border-gray-100 space-y-4 self-start"
         >
-          <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
-            <UserPlus className="w-5 h-5 text-[#00b074]" />
-            <h3 className="text-base font-extrabold text-gray-900">
-              Create New Sub-Admin Account
-            </h3>
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+            <div className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-[#00b074]" />
+              <h3 className="text-base font-extrabold text-gray-900">
+                Add Sub-Admin (Auto-Linked)
+              </h3>
+            </div>
+            <span className="text-[10px] font-bold text-[#00b074] bg-[#eaf7ef] px-2 py-0.5 rounded-full">
+              BetAura Linked
+            </span>
+          </div>
+
+          <div className="p-3 rounded-xl bg-gray-50 border border-gray-200 text-[11px] text-gray-600 space-y-1">
+            <p className="font-bold text-gray-900 flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#00b074]" />
+              Instant Bet Account Connection
+            </p>
+            <p>
+              Enter the user&apos;s registered <b>BetAura Username</b>. Their betting account will be linked automatically, and they will log into this Sub-Admin console using their BetAura password.
+            </p>
           </div>
 
           <div className="space-y-3">
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Full Name (e.g. Kwesi Boateng)"
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs font-semibold"
-            />
-            <div className="grid grid-cols-2 gap-2.5">
+            <div>
+              <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                BetAura Username <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Username (e.g. kwesi_admin)"
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs"
-              />
-              <input
-                type="text"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Phone (+233...)"
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs"
+                placeholder="e.g. kwesi_punter or akua_bets"
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs font-semibold"
               />
             </div>
-            <div className="grid grid-cols-2 gap-2.5">
-              <input
-                type="text"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Initial Password"
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs"
-              />
-              <select
-                value={roleTitle}
-                onChange={(e) => handlePresetChange(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs font-bold text-gray-800"
-              >
-                {Object.keys(ROLE_PRESETS).map((preset) => (
-                  <option key={preset} value={preset}>
-                    {preset}
-                  </option>
-                ))}
-              </select>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                  Display Name (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Kwesi (Operations Co-Admin)"
+                  className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                  Role Preset
+                </label>
+                <select
+                  value={roleTitle}
+                  onChange={(e) => handlePresetChange(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs font-bold text-gray-800"
+                >
+                  {Object.keys(ROLE_PRESETS).map((preset) => (
+                    <option key={preset} value={preset}>
+                      {preset}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 

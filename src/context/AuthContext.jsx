@@ -182,8 +182,8 @@ export function AuthProvider({ children }) {
         return;
       }
 
-      // If active admin has a connected BetAura account token, synchronize
-      if (admin?.connectedBetauraAccount?.access_token) {
+      // If active admin is NOT super admin and has a connected BetAura account token, synchronize
+      if (!admin?.isSuperAdmin && admin?.connectedBetauraAccount?.access_token) {
         localStorage.setItem(
           'betaura_admin_token',
           admin.connectedBetauraAccount.access_token
@@ -225,8 +225,8 @@ export function AuthProvider({ children }) {
         // ignore
       }
       const superToken =
-        savedSuperConnected?.access_token ||
-        localStorage.getItem('betaura_super_admin_token');
+        localStorage.getItem('betaura_super_admin_token') ||
+        savedSuperConnected?.access_token;
       if (superToken) {
         localStorage.setItem('betaura_admin_token', superToken);
       }
@@ -263,56 +263,124 @@ export function AuthProvider({ children }) {
     setAdmin({
       ...targetAdmin,
       isSuperAdmin: false,
-      initial: (targetAdmin.name?.[0] || 'A').toUpperCase(),
+      initial: (targetAdmin.name?.[0] || targetAdmin.username?.[0] || 'A').toUpperCase(),
     });
   }
 
   async function loginAdmin(identifier, password) {
     const rawId = (identifier || '').trim();
-    const clean = rawId.toLowerCase();
     const cleanPw = (password || '').trim();
     if (!rawId || !cleanPw) {
-      throw new Error('Please enter both your Admin username/phone and password.');
+      throw new Error('Please enter both your BetAura username/phone and password.');
     }
 
-    const matchedSub = subAdmins.find(
-      (s) =>
-        s.username?.toLowerCase() === clean ||
-        s.phone_number?.toLowerCase() === clean ||
-        s.name?.toLowerCase() === clean
-    );
-
-    if (matchedSub) {
-      if (matchedSub.status === 'SUSPENDED') {
-        throw new Error('This Sub-Admin account has been suspended by Super Admin.');
-      }
-      if (matchedSub.password && matchedSub.password !== cleanPw) {
-        throw new Error('Incorrect Sub-Admin password. Please check your password.');
-      }
-      localStorage.removeItem('betaura_admin_logged_out');
-      setIsLoggedOut(false);
-      switchActiveAdmin(matchedSub);
-      return matchedSub;
-    }
-
-    // Authenticate via the backend /api/v1/auth/login endpoint
+    // 1. Authenticate credentials directly with BetAura backend
+    let authRes;
     try {
-      const res = await adminApi.login(rawId, cleanPw);
-      if (res.data?.access_token) {
-        const token = res.data.access_token;
-        localStorage.setItem('betaura_admin_token', token);
-        localStorage.setItem('betaura_super_admin_token', token);
-        localStorage.removeItem('betaura_admin_logged_out');
-        setIsLoggedOut(false);
-        switchActiveAdmin('SUPER');
-        return { name: rawId, username: rawId, role: 'ROLE_SUPER_ADMIN' };
-      }
+      authRes = await adminApi.login(rawId, cleanPw);
     } catch (err) {
       const detail = err.response?.data?.detail;
-      throw new Error(detail || 'Invalid admin credentials. Use your assigned Admin username and password.');
+      throw new Error(detail || 'Invalid login credentials. Please check your BetAura username and password.');
     }
 
-    throw new Error('Invalid admin credentials. Use your assigned Admin username and password.');
+    const token = authRes?.data?.access_token;
+    if (!token) {
+      throw new Error('Authentication succeeded but no access token was returned.');
+    }
+
+    // Temporarily set token in local storage so subsequent profile/subadmin calls succeed
+    localStorage.setItem('betaura_admin_token', token);
+
+    // 2. Fetch authenticated profile
+    let userProfile = null;
+    try {
+      const profRes = await adminApi.getProfile();
+      userProfile = profRes?.data;
+    } catch {
+      // ignore
+    }
+
+    const authUsername = (userProfile?.username || authRes?.data?.username || rawId).toLowerCase();
+    const authPhone = (userProfile?.phone_number || rawId).toLowerCase();
+    const authRole = userProfile?.role || authRes?.data?.role || '';
+
+    // Check if this is Super Admin
+    const isSuper =
+      authRole === 'ROLE_SUPER_ADMIN' ||
+      authUsername === 'thisissuperadmin' ||
+      authUsername === 'superadmin' ||
+      authPhone === '+233540000001' ||
+      authPhone === '0540000001';
+
+    if (isSuper) {
+      localStorage.setItem('betaura_admin_token', token);
+      localStorage.setItem('betaura_super_admin_token', token);
+      localStorage.removeItem('betaura_admin_logged_out');
+      setIsLoggedOut(false);
+      switchActiveAdmin('SUPER');
+      return { name: 'ThisIsSuperAdmin', username: 'ThisIsSuperAdmin', role: 'ROLE_SUPER_ADMIN' };
+    }
+
+    // 3. Sub-Admin verification: Check if user is appointed as Sub-Admin
+    let latestSubs = subAdmins;
+    try {
+      const res = await adminApi.getSubAdmins();
+      if (Array.isArray(res?.data)) {
+        latestSubs = res.data;
+        setSubAdmins(res.data);
+      }
+    } catch {
+      // ignore
+    }
+
+    const matchedSub = latestSubs.find(
+      (s) =>
+        s.username?.toLowerCase() === authUsername ||
+        s.phone?.toLowerCase() === authPhone ||
+        s.phone_number?.toLowerCase() === authPhone ||
+        (userProfile?.id && String(s.user_id) === String(userProfile.id)) ||
+        (s.id && String(s.id) === String(userProfile?.id))
+    );
+
+    const isSubRole = authRole === 'ROLE_TRADER' || authRole === 'ROLE_SUB_ADMIN' || authRole === 'ROLE_ADMIN';
+
+    if (!matchedSub && !isSubRole) {
+      localStorage.removeItem('betaura_admin_token');
+      throw new Error(
+        `Access denied. The BetAura account "@${userProfile?.username || rawId}" is not appointed as a Sub-Admin. Please contact Super Admin to assign your username.`
+      );
+    }
+
+    if (matchedSub && matchedSub.status === 'SUSPENDED') {
+      localStorage.removeItem('betaura_admin_token');
+      throw new Error('This Sub-Admin account has been suspended by Super Admin.');
+    }
+
+    const activeSubProfile = {
+      id: matchedSub?.id || String(userProfile?.id || Date.now()),
+      user_id: String(userProfile?.id || matchedSub?.user_id || ''),
+      name: matchedSub?.name || userProfile?.username || rawId,
+      username: userProfile?.username || matchedSub?.username || rawId,
+      phone_number: userProfile?.phone_number || matchedSub?.phone_number || rawId,
+      initial: (userProfile?.username || rawId)[0].toUpperCase(),
+      role: 'ROLE_SUB_ADMIN',
+      roleTitle: matchedSub?.roleTitle || matchedSub?.role_title || 'Full Operations Co-Admin',
+      status: matchedSub?.status || 'ACTIVE',
+      permissions: matchedSub?.permissions || { ...ALL_PERMISSIONS },
+      connectedBetauraAccount: matchedSub?.connectedBetauraAccount || matchedSub?.connected_betaura_account || {
+        user_id: String(userProfile?.id || ''),
+        username: userProfile?.username || rawId,
+        phone_number: userProfile?.phone_number || rawId,
+        access_token: token,
+        connected_at: new Date().toISOString(),
+      },
+    };
+
+    localStorage.setItem('betaura_admin_token', token);
+    localStorage.removeItem('betaura_admin_logged_out');
+    setIsLoggedOut(false);
+    switchActiveAdmin(activeSubProfile);
+    return activeSubProfile;
   }
 
   async function changeSubAdminPassword(currentPassword, newPassword) {
