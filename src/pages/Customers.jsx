@@ -17,10 +17,11 @@ import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../utils/formatters';
 
 const LEVEL_LABELS = {
-  1: 'Level 1 (Basic)',
-  2: 'Level 2 (KYC Verified)',
-  3: 'Level 3 (VIP Gold)',
-  4: 'Level 4 (VVIP Platinum)',
+  1: 'Level 1 (ID Required)',
+  2: 'Level 2 (Tier 2 - GH₵ 300 Fee)',
+  3: 'Level 3 (Tier 3 - GH₵ 500 Fee)',
+  4: 'Level 4 (Tier 4 - GH₵ 1,000 Fee)',
+  5: 'Level 5 (VIP Fully Cleared)',
 };
 
 export default function Customers() {
@@ -175,6 +176,7 @@ export default function Customers() {
             username: u.username || '',
             phone: u.phone || u.phone_number || '',
             email: u.email || '',
+            nationalId: u.national_id_number || u.nationalId || null,
             tier,
             levelName: u.levelName || LEVEL_LABELS[tier] || `Level ${tier}`,
             status: u.status || 'VERIFIED',
@@ -248,7 +250,7 @@ export default function Customers() {
   async function handleUpgradeLevel(player) {
     if (!canManage) return;
     const currentTier = Number(player.tier || 1);
-    const nextTier = currentTier >= 4 ? 1 : currentTier + 1;
+    const nextTier = currentTier >= 5 ? 1 : currentTier + 1;
     const nextLabel = LEVEL_LABELS[nextTier] || `Level ${nextTier}`;
 
     const isMatch = (c) =>
@@ -878,6 +880,16 @@ export default function Customers() {
 
             {/* Account Summary Details */}
             <div className="grid grid-cols-2 gap-3 text-xs">
+              {selectedPlayer.nationalId && (
+                <div className="rounded-xl bg-[#22D3EE]/10 border border-[#22D3EE]/20 p-3 col-span-2">
+                  <span className="text-[10px] text-[#0E7490] font-black uppercase tracking-wider block">
+                    Ghana Card / National ID
+                  </span>
+                  <span className="text-xs font-mono font-bold text-gray-900 mt-0.5 block">
+                    {selectedPlayer.nationalId}
+                  </span>
+                </div>
+              )}
               <div className="rounded-xl bg-gray-50 p-3">
                 <span className="text-[10px] text-gray-400 uppercase font-bold block">
                   Wallet Balance
