@@ -155,17 +155,21 @@ export function AuthProvider({ children }) {
     try {
       const res = await adminApi.getSubAdmins();
       if (Array.isArray(res?.data)) {
-        setSubAdmins(
-          res.data.map((remote) => ({
-            ...remote,
-            phone_number: remote.phone_number || remote.phone || '',
-            roleTitle: remote.roleTitle || remote.role_title || 'Sub-Admin',
-            connectedBetauraAccount:
-              remote.connectedBetauraAccount ||
-              remote.connected_betaura_account ||
-              null,
-          }))
-        );
+        const liveSubs = res.data.map((remote) => ({
+          ...remote,
+          phone_number: remote.phone_number || remote.phone || '',
+          roleTitle: remote.roleTitle || remote.role_title || 'Sub-Admin',
+          connectedBetauraAccount:
+            remote.connectedBetauraAccount ||
+            remote.connected_betaura_account ||
+            null,
+        }));
+        setSubAdmins(liveSubs);
+        try {
+          localStorage.setItem('betaura_sub_admins', JSON.stringify(liveSubs));
+        } catch {
+          // ignore
+        }
       }
     } catch {
       // Keep local subAdmins if offline
@@ -318,6 +322,11 @@ export function AuthProvider({ children }) {
       localStorage.removeItem('betaura_admin_logged_out');
       setIsLoggedOut(false);
       switchActiveAdmin('SUPER');
+      try {
+        await refreshSubAdmins();
+      } catch {
+        // ignore
+      }
       return { name: 'ThisIsSuperAdmin', username: 'ThisIsSuperAdmin', role: 'ROLE_SUPER_ADMIN' };
     }
 

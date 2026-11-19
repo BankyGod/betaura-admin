@@ -696,7 +696,8 @@ export default function SubAdmins() {
   const [successWithdrawData, setSuccessWithdrawData] = useState(null);
 
   useEffect(() => {
-    refreshSubAdmins?.();
+    setSyncing(true);
+    refreshSubAdmins?.().finally(() => setSyncing(false));
   }, []);
 
   async function handleRefreshList() {
