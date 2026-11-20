@@ -799,7 +799,7 @@ export default function Settings() {
               <div className="flex items-center justify-between rounded-xl bg-gray-50 px-3.5 py-2.5">
                 <span className="text-gray-500 font-medium">Referral Commission</span>
                 <span className="font-extrabold text-gray-900">
-                  70% First Deposit (Sub-Admin)
+                  {admin?.commission_rate ?? admin?.commission_percentage ?? 70}% on Every Deposit (Sub-Admin)
                 </span>
               </div>
             </div>

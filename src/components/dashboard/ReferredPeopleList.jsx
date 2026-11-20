@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Users, Copy, Check, Share2, Gift, UserCheck } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
+import { useAuth } from '../../context/AuthContext';
 
 export default function ReferredPeopleList({
   referralCode = 'AURA-SUB',
@@ -10,6 +11,8 @@ export default function ReferredPeopleList({
   bonusBalance = 0,
   isSubAdmin = false,
 }) {
+  const { admin } = useAuth();
+  const commRate = Number(admin?.commission_rate ?? admin?.commission_percentage ?? 70);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
@@ -43,7 +46,7 @@ export default function ReferredPeopleList({
                 : `Referred Players & Referral Commissions (${referredPeople.length || totalInvited})`}
             </h3>
             <p className="text-[11px] text-gray-400">
-              70% commission on invitee&apos;s first deposit — credited directly to your referral earnings
+              {commRate}% commission on every deposit made by invitees — credited directly to your referral earnings
             </p>
           </div>
         </div>
@@ -120,7 +123,7 @@ export default function ReferredPeopleList({
             No referred players recorded under code {referralCode} yet
           </p>
           <p className="text-[11px] text-gray-500 max-w-md mx-auto">
-            Share your invite code <strong>{referralCode}</strong> or link above. Every player who registers with your code will appear here along with your 70% first-deposit referral earnings!
+            Share your invite code <strong>{referralCode}</strong> or link above. Every player who registers with your code will appear here along with your {commRate}% referral earnings on every deposit they make!
           </p>
         </div>
       ) : (

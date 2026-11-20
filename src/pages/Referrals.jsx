@@ -17,6 +17,7 @@ export default function Referrals() {
   const isSuperAdmin = Boolean(
     admin?.isSuperAdmin || admin?.role === 'ROLE_SUPER_ADMIN'
   );
+  const commRate = Number(admin?.commission_rate ?? admin?.commission_percentage ?? 70);
 
   useEffect(() => {
     let isMounted = true;
@@ -59,7 +60,9 @@ export default function Referrals() {
             Referrals Program
           </h2>
           <p className="text-xs text-gray-400 mt-0.5">
-            Live referral metrics from /api/v1/referral/stats (50% on invitee&apos;s first deposit)
+            {isSuperAdmin
+              ? 'Live referral metrics (Sub-Admins earn on every deposit; regular users on first deposit)'
+              : `Live referral metrics (${commRate}% commission credited on every deposit made by invitees)`}
           </p>
         </div>
 

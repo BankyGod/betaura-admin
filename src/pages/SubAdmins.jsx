@@ -237,7 +237,7 @@ const PERMISSION_META = [
   {
     key: 'manage_referrals',
     category: 'Referrals & Growth',
-    label: 'Referral Program & 70% First Deposit Share',
+    label: 'Referral Program & Sub-Admin Commission Share',
     desc: 'Can track affiliate links, punter acquisition, downstream bets, and calculate earnings',
   },
   {
