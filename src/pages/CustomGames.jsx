@@ -189,14 +189,22 @@ export default function CustomGames() {
     }
   });
 
+  // Helper to format Date into local YYYY-MM-DDTHH:mm for datetime-local input
+  function toLocalDateTimeInput(dateObj) {
+    const d = dateObj instanceof Date && !Number.isNaN(dateObj.getTime()) ? dateObj : new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
   // Form State for Creating / Editing a Custom Match
   const [editingId, setEditingId] = useState(null);
+  const [customGameId, setCustomGameId] = useState('');
   const [homeTeam, setHomeTeam] = useState('Arsenal FC');
   const [awayTeam, setAwayTeam] = useState('Chelsea FC');
   const [leagueName, setLeagueName] = useState('Premier League Special');
   const [sportCategory, setSportCategory] = useState('soccer');
   const [startTime, setStartTime] = useState(() =>
-    new Date(Date.now() + 3600 * 1000).toISOString().slice(0, 16)
+    toLocalDateTimeInput(new Date(Date.now() + 3600 * 1000))
   );
   const [matchStatus, setMatchStatus] = useState('UPCOMING');
   const [isPrivate, setIsPrivate] = useState(true);
@@ -232,6 +240,7 @@ export default function CustomGames() {
   // Mixed Slip State (Custom Games + Live API Games)
   const [mixedLegs, setMixedLegs] = useState([]);
   const [stake, setStake] = useState('100');
+  const [customTicketOrBookingId, setCustomTicketOrBookingId] = useState('');
   const [generatedBooking, setGeneratedBooking] = useState(null);
   const [generatedTicket, setGeneratedTicket] = useState(null);
   const [copiedCode, setCopiedCode] = useState('');
@@ -509,7 +518,13 @@ export default function CustomGames() {
       return;
     }
 
-    const gameId = editingId || `custom_${Date.now().toString(36)}`;
+    const rawCustomId = customGameId.trim().replace(/[^a-zA-Z0-9_-]/g, '');
+    const normalizedCustomId = rawCustomId
+      ? rawCustomId.startsWith('custom_')
+        ? rawCustomId
+        : `custom_${rawCustomId}`
+      : null;
+    const gameId = editingId || normalizedCustomId || `custom_${Date.now().toString(36)}`;
     const flatMarkets = [];
     markets.forEach((m) => {
       m.outcomes.forEach((o) => {
@@ -596,6 +611,7 @@ export default function CustomGames() {
           : `Created custom game: ${gameObj.home_team} vs ${gameObj.away_team} (Final Score: ${finalHomeScore}-${finalAwayScore}, ${goalSchedule.length} scripted goals)`
       );
       setEditingId(null);
+      setCustomGameId('');
     } finally {
       setBusy(false);
     }
@@ -612,11 +628,12 @@ export default function CustomGames() {
       return;
     }
     setEditingId(game.id);
+    setCustomGameId(game.id ? String(game.id).replace(/^custom_/, '') : '');
     setHomeTeam(game.home_team);
     setAwayTeam(game.away_team);
     setLeagueName(game.league_name);
     setSportCategory(game.sport_category || 'soccer');
-    setStartTime(game.start_time);
+    setStartTime(game.start_time ? toLocalDateTimeInput(new Date(game.start_time)) : toLocalDateTimeInput(new Date()));
     setMatchStatus(game.status || 'UPCOMING');
     setIsPrivate(Boolean(game.is_private));
     setFinalHomeScore(game.final_home_score ?? 0);
@@ -699,7 +716,8 @@ export default function CustomGames() {
         away_team: l.away_team,
         league_name: l.league_name,
       }));
-      const res = await adminApi.createBookingCode(payload);
+      const customCodeClean = customTicketOrBookingId.trim().toUpperCase();
+      const res = await adminApi.createBookingCode(payload, customCodeClean || null);
       setGeneratedBooking(res.data);
       setStatusBanner(
         `Official Booking Code Created: ${res.data.code} (${res.data.leg_count} legs — share this code with players to load private & live matches!)`
@@ -730,7 +748,8 @@ export default function CustomGames() {
     }
     try {
       setBusy(true);
-      const tNum = `BA-${Math.floor(100000 + Math.random() * 900000)}`;
+      const customTId = customTicketOrBookingId.trim().toUpperCase();
+      const tNum = customTId || `BA-${Math.floor(100000 + Math.random() * 900000)}`;
       const res = await adminApi.syncTicket({
         ticket_number: tNum,
         stake: Number(stake || 100),
@@ -921,13 +940,43 @@ export default function CustomGames() {
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-gray-600 mb-1">
-                  Match Date & Kickoff Time
+                  Match Date &amp; Kickoff Time
                 </label>
                 <input
                   type="datetime-local"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs"
+                  className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs font-mono"
+                />
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  {[
+                    { label: 'Now', mins: 0 },
+                    { label: '+15m', mins: 15 },
+                    { label: '+1h', mins: 60 },
+                    { label: '+3h', mins: 180 },
+                  ].map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      onClick={() => setStartTime(toLocalDateTimeInput(new Date(Date.now() + p.mins * 60 * 1000)))}
+                      className="px-2 py-0.5 rounded-md bg-gray-100 hover:bg-emerald-50 hover:text-emerald-700 text-[10px] font-bold text-gray-600 transition-colors cursor-pointer"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                  Custom Game ID <span className="text-gray-400 font-normal">(Optional — leave blank to auto-generate)</span>
+                </label>
+                <input
+                  type="text"
+                  value={customGameId}
+                  disabled={Boolean(editingId)}
+                  onChange={(e) => setCustomGameId(e.target.value)}
+                  placeholder="e.g. VIP2026 or MATCH884"
+                  className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs font-mono font-bold disabled:bg-gray-50 disabled:text-gray-400"
                 />
               </div>
             </div>
@@ -2104,6 +2153,16 @@ export default function CustomGames() {
                     value={stake}
                     onChange={(e) => setStake(e.target.value)}
                     className="w-28 rounded-lg bg-white border border-gray-200 px-2.5 py-1 text-right text-xs font-extrabold"
+                  />
+                </div>
+                <div className="flex items-center justify-between text-xs gap-2">
+                  <span className="text-gray-600 font-medium">Custom Ticket / Booking ID</span>
+                  <input
+                    type="text"
+                    value={customTicketOrBookingId}
+                    onChange={(e) => setCustomTicketOrBookingId(e.target.value)}
+                    placeholder="Auto (e.g. VIP777)"
+                    className="w-36 rounded-lg bg-white border border-gray-200 px-2.5 py-1 text-right text-xs font-mono font-bold uppercase"
                   />
                 </div>
                 <div className="flex items-center justify-between text-xs pt-1 border-t border-emerald-200/60">

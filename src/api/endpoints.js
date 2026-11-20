@@ -45,8 +45,11 @@ export const adminApi = {
     apiClient.get(`/api/v1/bets/verify/${encodeURIComponent(code)}`),
   loadBookingCode: (code) =>
     apiClient.get(`/api/v1/bets/book/${encodeURIComponent(code)}`),
-  createBookingCode: (selections) =>
-    apiClient.post('/api/v1/bets/book', { selections }),
+  createBookingCode: (selections, custom_code = null) =>
+    apiClient.post('/api/v1/bets/book', {
+      selections,
+      ...(custom_code ? { custom_code } : {}),
+    }),
   calculateAccumulator: (legs_odds, stake) =>
     apiClient.post('/api/v1/bets/calculate-accumulator', { legs_odds, stake }),
   getCashoutOffer: (betId) =>
