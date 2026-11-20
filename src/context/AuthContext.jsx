@@ -501,7 +501,7 @@ export function AuthProvider({ children }) {
         connectedInfo = res.data.connected_account;
       }
     } catch {
-      // 2. Fallback to standard /api/v1/auth/login on https://betaura-api.onrender.com
+      // 2. Fallback to standard /api/v1/auth/login on https://betaura.online
       const loginRes = await adminApi.login(cleanId, cleanPw);
       if (loginRes?.data?.access_token) {
         const token = loginRes.data.access_token;

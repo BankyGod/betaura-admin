@@ -24,7 +24,7 @@ export default function LiveSync() {
       <div>
         <h2 className="text-2xl font-extrabold text-gray-900">Live Feed & ESPN Sync</h2>
         <p className="text-xs text-gray-400 mt-0.5">
-          Trigger real-time in-play and upcoming fixture synchronization on https://betaura-api.onrender.com
+          Trigger real-time in-play and upcoming fixture synchronization on https://betaura.online
         </p>
       </div>
 

@@ -16,7 +16,7 @@ export default function ReferredPeopleList({
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  const shareLink = `https://betaura.onrender.com/?ref=${encodeURIComponent(
+  const shareLink = `https://betaura.online/?ref=${encodeURIComponent(
     referralCode
   )}`;
 

@@ -561,7 +561,7 @@ export default function CustomGames() {
           markets: flatMarkets,
         });
       } catch {
-        // Fallback: register the fixture stub on https://betaura-api.onrender.com via syncTicket
+        // Fallback: register the fixture stub on https://betaura.online via syncTicket
         try {
           await adminApi.syncTicket({
             ticket_number: `SEED-${gameId.slice(-6).toUpperCase()}`,
@@ -662,7 +662,7 @@ export default function CustomGames() {
     if (mixedLegs.length === 0) return;
     try {
       setBusy(true);
-      setStatusBanner('Generating official Booking Code on https://betaura-api.onrender.com...');
+      setStatusBanner('Generating official Booking Code on https://betaura.online...');
 
       // Ensure any custom fixtures exist on backend first
       const customLegs = mixedLegs.filter((l) => l.is_custom);
@@ -1929,7 +1929,7 @@ export default function CustomGames() {
               </div>
             </div>
 
-            {/* Section B: Real Live / Upcoming Matches from https://betaura-api.onrender.com */}
+            {/* Section B: Real Live / Upcoming Matches from https://betaura.online */}
             <div className="bg-white rounded-2xl p-5 shadow-xs border border-gray-100 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-extrabold text-gray-900 flex items-center gap-2">

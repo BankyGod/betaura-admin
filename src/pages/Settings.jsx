@@ -271,7 +271,7 @@ export default function Settings() {
     connectedAcc?.referral_code ||
     admin?.referral_code ||
     (isSuperAdmin ? 'AURA-PROFIT' : `AURA-${(admin?.username || 'ADMIN').slice(0, 6).toUpperCase()}`);
-  const referralLink = `https://betaura.onrender.com/register?ref=${encodeURIComponent(referralCode)}`;
+  const referralLink = `https://betaura.online/register?ref=${encodeURIComponent(referralCode)}`;
 
   async function checkBackendStatus() {
     try {
@@ -787,12 +787,12 @@ export default function Settings() {
               <div className="flex items-center justify-between rounded-xl bg-gray-50 px-3.5 py-2.5">
                 <span className="text-gray-500 font-medium">Sportsbook Web</span>
                 <a
-                  href="https://betaura.onrender.com"
+                  href="https://betaura.online"
                   target="_blank"
                   rel="noreferrer"
                   className="font-bold text-[#00b074] hover:underline"
                 >
-                  betaura.onrender.com ↗
+                  betaura.online ↗
                 </a>
               </div>
 
