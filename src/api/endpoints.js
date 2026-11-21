@@ -72,6 +72,11 @@ export const adminApi = {
       `/api/v1/admin/users/${encodeURIComponent(identifier)}/manage`,
       payload
     ),
+  reassignUserReferrer: (identifier, payload) =>
+    apiClient.post(
+      `/api/v1/admin/users/${encodeURIComponent(identifier)}/reassign-referrer`,
+      payload
+    ),
   deleteUser: (identifier) =>
     apiClient.delete(`/api/v1/admin/users/${encodeURIComponent(identifier)}`),
   purgeAllPunters: () =>

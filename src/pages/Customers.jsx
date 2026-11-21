@@ -11,6 +11,7 @@ import {
   UserCheck,
   Link2,
   Key,
+  Edit3,
 } from 'lucide-react';
 import { adminApi } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
@@ -36,6 +37,10 @@ export default function Customers() {
   const [newPassword, setNewPassword] = useState('');
   const [msg, setMsg] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [editingReferrer, setEditingReferrer] = useState(false);
+  const [selectedSubAdminCode, setSelectedSubAdminCode] = useState('');
+  const [creditRetroactive, setCreditRetroactive] = useState(true);
+  const [savingReferrer, setSavingReferrer] = useState(false);
 
   const resolveReferrer = useCallback(
     (u, allUsers = []) => {
@@ -387,6 +392,43 @@ export default function Customers() {
     }
   }
 
+  function openPlayerDrawer(player) {
+    setSelectedPlayer(player);
+    setEditingReferrer(false);
+    setSelectedSubAdminCode(player.referralInfo?.code || player.referred_by || '__DIRECT__');
+  }
+
+  async function handleSaveReferrer() {
+    if (!selectedPlayer) return;
+    setSavingReferrer(true);
+    try {
+      const targetCode = selectedSubAdminCode === '__DIRECT__' ? null : selectedSubAdminCode;
+      const res = await adminApi.reassignUserReferrer(selectedPlayer.id, {
+        referrer_code: targetCode,
+        credit_retroactive: creditRetroactive,
+      });
+      setMsg(res.data?.message || 'Referrer updated successfully');
+      setEditingReferrer(false);
+      await fetchBackendUsers();
+      const updatedRef = res.data?.referred_by || null;
+      const resolved = resolveReferrer(
+        { ...selectedPlayer, referred_by: updatedRef },
+        customers
+      );
+      setSelectedPlayer((prev) => ({
+        ...prev,
+        referred_by: updatedRef,
+        referral_source:
+          res.data?.referral_source || (updatedRef ? `Code: ${updatedRef}` : 'Direct'),
+        referralInfo: resolved,
+      }));
+    } catch (err) {
+      setMsg(`Error updating referrer: ${err.response?.data?.detail || err.message}`);
+    } finally {
+      setSavingReferrer(false);
+    }
+  }
+
   async function handleAddLookupPlayer(e) {
     e.preventDefault();
     if (!newPhone.trim()) return;
@@ -557,7 +599,7 @@ export default function Customers() {
             return (
               <div
                 key={c.id}
-                onClick={() => setSelectedPlayer(c)}
+                onClick={() => openPlayerDrawer(c)}
                 className="bg-white rounded-2xl p-3.5 border border-gray-100 shadow-xs space-y-3 cursor-pointer hover:border-[#00b074]/40 transition"
               >
                 <div className="flex items-center justify-between">
@@ -673,8 +715,8 @@ export default function Customers() {
                   return (
                     <tr
                       key={c.id}
-                      onClick={() => setSelectedPlayer(c)}
-                      title="Click to see which Sub-Admin referred this user"
+                      onClick={() => openPlayerDrawer(c)}
+                      title="Click to see which Sub-Admin referred this user or reassign attribution"
                       className="hover:bg-[#d9f3ea]/30 cursor-pointer transition"
                     >
                       <td className="px-5 py-3.5">
@@ -819,20 +861,94 @@ export default function Customers() {
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
                   Referred By (Sub-Admin)
                 </span>
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
-                    selectedPlayer.referralInfo?.isDirect !== false
-                      ? 'bg-gray-200 text-gray-700'
-                      : 'bg-[#00b074] text-white'
-                  }`}
-                >
-                  {selectedPlayer.referralInfo?.isDirect !== false
-                    ? 'Direct'
-                    : 'Sub-Admin Referral'}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
+                      selectedPlayer.referralInfo?.isDirect !== false
+                        ? 'bg-gray-200 text-gray-700'
+                        : 'bg-[#00b074] text-white'
+                    }`}
+                  >
+                    {selectedPlayer.referralInfo?.isDirect !== false
+                      ? 'Direct'
+                      : 'Sub-Admin Referral'}
+                  </span>
+                  {canManage && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingReferrer(!editingReferrer)}
+                      className="px-2 py-0.5 text-[10px] font-bold rounded-lg border border-gray-300 bg-white hover:bg-gray-100 text-gray-700 flex items-center gap-1 transition shadow-xs cursor-pointer"
+                      title="Change or reassign referral attribution"
+                    >
+                      <Edit3 className="w-2.5 h-2.5 text-[#00b074]" />
+                      <span>{editingReferrer ? 'Close' : 'Reassign'}</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {selectedPlayer.referralInfo?.isDirect !== false ? (
+              {editingReferrer ? (
+                <div className="mt-3 p-3 bg-white rounded-xl border border-gray-200 space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                      Link Player to Sub-Admin:
+                    </label>
+                    <select
+                      value={selectedSubAdminCode}
+                      onChange={(e) => setSelectedSubAdminCode(e.target.value)}
+                      className="w-full text-xs font-bold rounded-lg border border-gray-300 p-2 bg-gray-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#00b074]"
+                    >
+                      <option value="__DIRECT__">Direct (No Referrer / Super Admin)</option>
+                      {Array.isArray(subAdmins) && subAdmins.length > 0 ? (
+                        subAdmins.map((sa) => {
+                          const code = sa.referral_code || `AURA-${(sa.username || '').toUpperCase()}`;
+                          return (
+                            <option key={sa.id || sa.username} value={code}>
+                              {sa.name || sa.username} (@{sa.username}) — Code: {code}
+                            </option>
+                          );
+                        })
+                      ) : (
+                        <>
+                          <option value="AURA-GREENLORD">Greenlord (@Greenlord)</option>
+                          <option value="AURA-BIZZY1">Bizzy1 (@Bizzy1)</option>
+                          <option value="AURA-KOOKO5CEDIS">Kooko5Cedis (@Kooko5Cedis)</option>
+                          <option value="AURA-LORD">Lord (@Lord)</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+
+                  <label className="flex items-center gap-2 text-[11px] font-bold text-gray-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={creditRetroactive}
+                      onChange={(e) => setCreditRetroactive(e.target.checked)}
+                      className="rounded border-gray-300 text-[#00b074] focus:ring-0"
+                    />
+                    <span>Credit retroactive commission (70%) on past deposits</span>
+                  </label>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      disabled={savingReferrer}
+                      onClick={handleSaveReferrer}
+                      className="flex-1 py-1.5 px-3 bg-[#00b074] hover:bg-[#009260] text-white text-xs font-extrabold rounded-lg shadow-xs transition disabled:opacity-50 cursor-pointer"
+                    >
+                      {savingReferrer ? 'Saving...' : 'Confirm Assignment'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={savingReferrer}
+                      onClick={() => setEditingReferrer(false)}
+                      className="py-1.5 px-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : selectedPlayer.referralInfo?.isDirect !== false ? (
                 <div className="flex items-center gap-2.5 mt-2">
                   <UserCheck className="w-5 h-5 text-gray-500 shrink-0" />
                   <div>
