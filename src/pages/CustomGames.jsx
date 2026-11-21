@@ -17,6 +17,18 @@ import { adminApi } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../utils/formatters';
 
+const POPULAR_LEAGUES = [
+  'Argentina - Liga Profesional (Clausura)',
+  'Premier League Special',
+  'UEFA Champions League',
+  'La Liga',
+  'Serie A',
+  'Bundesliga',
+  'Ligue 1',
+  'Ghana Premier League',
+  'Nigeria Premier Football League',
+];
+
 const DEFAULT_MARKETS_TEMPLATE = [
   {
     market_name: '1X2',
@@ -53,14 +65,6 @@ const DEFAULT_MARKETS_TEMPLATE = [
     ],
   },
   {
-    market_name: 'Penalty Awarded',
-    visible: true,
-    outcomes: [
-      { outcome_name: 'Yes', odds: 2.75 },
-      { outcome_name: 'No', odds: 1.40 },
-    ],
-  },
-  {
     market_name: 'Red Card in Match',
     visible: true,
     outcomes: [
@@ -77,11 +81,11 @@ const DEFAULT_MARKETS_TEMPLATE = [
     ],
   },
   {
-    market_name: 'VAR Review in Match',
+    market_name: 'Total Bookings Over/Under 4.5',
     visible: true,
     outcomes: [
-      { outcome_name: 'Yes', odds: 2.10 },
-      { outcome_name: 'No', odds: 1.65 },
+      { outcome_name: 'Over 4.5', odds: 2.10 },
+      { outcome_name: 'Under 4.5', odds: 1.65 },
     ],
   },
   {
@@ -201,7 +205,7 @@ export default function CustomGames() {
   const [customGameId, setCustomGameId] = useState('');
   const [homeTeam, setHomeTeam] = useState('Arsenal FC');
   const [awayTeam, setAwayTeam] = useState('Chelsea FC');
-  const [leagueName, setLeagueName] = useState('Premier League Special');
+  const [leagueName, setLeagueName] = useState('Argentina - Liga Profesional (Clausura)');
   const [sportCategory, setSportCategory] = useState('soccer');
   const [startTime, setStartTime] = useState(() =>
     toLocalDateTimeInput(new Date(Date.now() + 3600 * 1000))
@@ -210,22 +214,18 @@ export default function CustomGames() {
   const [isPrivate, setIsPrivate] = useState(true);
   const [finalHomeScore, setFinalHomeScore] = useState(2);
   const [finalAwayScore, setFinalAwayScore] = useState(1);
-  const [eventScriptTab, setEventScriptTab] = useState('goals'); // 'goals' | 'penalties' | 'cards' | 'var'
+  const [eventScriptTab, setEventScriptTab] = useState('goals'); // 'goals' | 'cards'
   const [goalSchedule, setGoalSchedule] = useState([
     { minute: 19, team: 'HOME', scorer: 'Opening Goal' },
     { minute: 61, team: 'AWAY', scorer: 'Equalizer' },
     { minute: 84, team: 'HOME', scorer: 'Late Winner' },
   ]);
-  const [penaltySchedule, setPenaltySchedule] = useState([
-    { minute: 42, team: 'HOME', taker: 'Striker #9', outcome: 'SCORED' },
-  ]);
+  const [penaltySchedule, setPenaltySchedule] = useState([]);
   const [cardSchedule, setCardSchedule] = useState([
     { minute: 31, team: 'AWAY', player: 'Defender #4', card_type: 'YELLOW', reason: 'Tactical Foul' },
     { minute: 76, team: 'HOME', player: 'Midfielder #8', card_type: 'YELLOW', reason: 'Dissent' },
   ]);
-  const [varSchedule, setVarSchedule] = useState([
-    { minute: 58, team: 'HOME', decision: 'GOAL_CHECK_CONFIRMED', description: 'VAR Goal Review (Onside Confirmed)' },
-  ]);
+  const [varSchedule, setVarSchedule] = useState([]);
   const [markets, setMarkets] = useState(() =>
     JSON.parse(JSON.stringify(DEFAULT_MARKETS_TEMPLATE))
   );
@@ -933,10 +933,33 @@ export default function CustomGames() {
                 </label>
                 <input
                   type="text"
+                  list="popular-leagues-datalist"
                   value={leagueName}
                   onChange={(e) => setLeagueName(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs"
+                  placeholder="e.g. Argentina - Liga Profesional (Clausura)"
+                  className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs font-semibold"
                 />
+                <datalist id="popular-leagues-datalist">
+                  {POPULAR_LEAGUES.map((lg) => (
+                    <option key={lg} value={lg} />
+                  ))}
+                </datalist>
+                <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                  {POPULAR_LEAGUES.slice(0, 5).map((lg) => (
+                    <button
+                      key={lg}
+                      type="button"
+                      onClick={() => setLeagueName(lg)}
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition cursor-pointer ${
+                        leagueName === lg
+                          ? 'bg-[#00b074] text-white shadow-2xs'
+                          : 'bg-gray-100 text-gray-700 hover:bg-emerald-50 hover:text-emerald-700'
+                      }`}
+                    >
+                      {lg}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-gray-600 mb-1">
@@ -1026,22 +1049,22 @@ export default function CustomGames() {
               </div>
             </div>
 
-            {/* Scripted Match Events: Goals, Penalties, Cards & VAR */}
+            {/* Scripted Match Events: Goals & Bookings (Cards) */}
             <div className="rounded-2xl bg-gray-50 p-4 border border-gray-100 space-y-3.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-[#00b074]" />
                   <h4 className="text-xs font-extrabold text-gray-900">
-                    Match Scripting: Goals, Penalties, Cards & VAR
+                    Match Scripting: Goals &amp; Bookings (Cards)
                   </h4>
                 </div>
                 <span className="text-[10px] text-gray-400 font-medium">
-                  Script live timeline & market outcomes
+                  Script live goals, cards and bookings timeline
                 </span>
               </div>
 
               {/* Sub-tabs for Scripting */}
-              <div className="grid grid-cols-4 gap-1.5 p-1 bg-white rounded-xl border border-gray-200">
+              <div className="grid grid-cols-2 gap-1.5 p-1 bg-white rounded-xl border border-gray-200">
                 <button
                   type="button"
                   onClick={() => setEventScriptTab('goals')}
@@ -1065,27 +1088,6 @@ export default function CustomGames() {
 
                 <button
                   type="button"
-                  onClick={() => setEventScriptTab('penalties')}
-                  className={`py-1.5 px-2 rounded-lg text-[11px] font-extrabold transition flex items-center justify-center gap-1.5 ${
-                    eventScriptTab === 'penalties'
-                      ? 'bg-[#00b074] text-white shadow-xs'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <span>🎯 Penalties</span>
-                  <span
-                    className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
-                      eventScriptTab === 'penalties'
-                        ? 'bg-white/25 text-white'
-                        : 'bg-gray-200 text-gray-700'
-                    }`}
-                  >
-                    {penaltySchedule.length}
-                  </span>
-                </button>
-
-                <button
-                  type="button"
                   onClick={() => setEventScriptTab('cards')}
                   className={`py-1.5 px-2 rounded-lg text-[11px] font-extrabold transition flex items-center justify-center gap-1.5 ${
                     eventScriptTab === 'cards'
@@ -1093,7 +1095,7 @@ export default function CustomGames() {
                       : 'text-gray-600 hover:bg-gray-100'
                   }`}
                 >
-                  <span>🟨 Cards</span>
+                  <span>🟨 Cards &amp; Bookings</span>
                   <span
                     className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
                       eventScriptTab === 'cards'
@@ -1102,27 +1104,6 @@ export default function CustomGames() {
                     }`}
                   >
                     {cardSchedule.length}
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setEventScriptTab('var')}
-                  className={`py-1.5 px-2 rounded-lg text-[11px] font-extrabold transition flex items-center justify-center gap-1.5 ${
-                    eventScriptTab === 'var'
-                      ? 'bg-[#00b074] text-white shadow-xs'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <span>📺 VAR</span>
-                  <span
-                    className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
-                      eventScriptTab === 'var'
-                        ? 'bg-white/25 text-white'
-                        : 'bg-gray-200 text-gray-700'
-                    }`}
-                  >
-                    {varSchedule.length}
                   </span>
                 </button>
               </div>
@@ -1248,121 +1229,16 @@ export default function CustomGames() {
                 </div>
               )}
 
-              {/* 🎯 TAB 2: PENALTIES SCRIPTING */}
-              {eventScriptTab === 'penalties' && (
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-[11px] font-bold text-gray-700">
-                        Penalties Awarded ({penaltySchedule.length})
-                      </span>
-                      <p className="text-[10px] text-gray-400">
-                        Script penalty kicks, takers, and scored/missed/saved outcomes
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleAddPenaltyRow}
-                      className="inline-flex items-center gap-1 text-xs font-bold text-[#00b074] bg-[#d9f3ea] px-2.5 py-1 rounded-lg"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Add Penalty</span>
-                    </button>
-                  </div>
-
-                  {penaltySchedule.length === 0 ? (
-                    <p className="text-[11px] text-gray-400 italic bg-white p-3 rounded-xl border border-dashed border-gray-200 text-center">
-                      No penalties scripted for this match. Click &apos;Add Penalty&apos; to schedule one.
-                    </p>
-                  ) : (
-                    penaltySchedule.map((p, idx) => (
-                      <div
-                        key={idx}
-                        className="flex flex-wrap sm:flex-nowrap items-center gap-2 bg-white rounded-xl p-2.5 border border-gray-200"
-                      >
-                        <div className="flex items-center gap-1 w-18">
-                          <input
-                            type="number"
-                            min="1"
-                            max="120"
-                            value={p.minute}
-                            onChange={(e) =>
-                              handleUpdatePenaltyRow(idx, 'minute', e.target.value)
-                            }
-                            className="w-12 rounded-lg border border-gray-200 px-2 py-1 text-xs font-extrabold text-center"
-                          />
-                          <span className="text-xs font-bold text-gray-400">&apos;</span>
-                        </div>
-
-                        <select
-                          value={p.team}
-                          onChange={(e) =>
-                            handleUpdatePenaltyRow(idx, 'team', e.target.value)
-                          }
-                          className="rounded-lg border border-gray-200 px-2 py-1 text-xs font-bold text-gray-800"
-                        >
-                          <option value="HOME">{homeTeam || 'Home'}</option>
-                          <option value="AWAY">{awayTeam || 'Away'}</option>
-                        </select>
-
-                        <input
-                          type="text"
-                          value={p.taker || ''}
-                          onChange={(e) =>
-                            handleUpdatePenaltyRow(idx, 'taker', e.target.value)
-                          }
-                          placeholder="Penalty Taker (e.g. Captain / #9)"
-                          className="flex-1 min-w-[120px] rounded-lg border border-gray-200 px-2.5 py-1 text-xs"
-                        />
-
-                        <select
-                          value={p.outcome}
-                          onChange={(e) =>
-                            handleUpdatePenaltyRow(idx, 'outcome', e.target.value)
-                          }
-                          className={`rounded-lg border px-2 py-1 text-xs font-extrabold ${
-                            p.outcome === 'SCORED'
-                              ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
-                              : p.outcome === 'MISSED'
-                              ? 'border-amber-300 bg-amber-50 text-amber-800'
-                              : 'border-blue-300 bg-blue-50 text-blue-800'
-                          }`}
-                        >
-                          <option value="SCORED">⚽ SCORED</option>
-                          <option value="MISSED">❌ MISSED</option>
-                          <option value="SAVED">🧤 SAVED</option>
-                        </select>
-
-                        <button
-                          type="button"
-                          onClick={() => handleRemovePenaltyRow(idx)}
-                          className="p-1 text-gray-400 hover:text-red-500"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))
-                  )}
-
-                  <div className="p-2 rounded-lg bg-emerald-50/60 border border-emerald-100 text-[10px] text-emerald-800 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-[#00b074]" />
-                    <span>
-                      Awarded penalties automatically validate <strong>&apos;Penalty Awarded in Match&apos;</strong> market. If Scored, add to Goals tab if it should change the score.
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* 🟨 TAB 3: CARDS & BOOKINGS SCRIPTING */}
+              {/* 🟨 TAB 2: CARDS & BOOKINGS SCRIPTING */}
               {eventScriptTab === 'cards' && (
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="text-[11px] font-bold text-gray-700">
-                        Bookings & Disciplinary Cards ({cardSchedule.length})
+                        Bookings &amp; Disciplinary Cards ({cardSchedule.length})
                       </span>
                       <p className="text-[10px] text-gray-400">
-                        Script Yellows, Second Yellows, Straight Reds and reasons
+                        Script Yellows, Second Yellows, Straight Reds and match bookings
                       </p>
                     </div>
                     <button
@@ -1371,13 +1247,13 @@ export default function CustomGames() {
                       className="inline-flex items-center gap-1 text-xs font-bold text-[#00b074] bg-[#d9f3ea] px-2.5 py-1 rounded-lg"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>Add Card</span>
+                      <span>Add Card / Booking</span>
                     </button>
                   </div>
 
                   {cardSchedule.length === 0 ? (
                     <p className="text-[11px] text-gray-400 italic bg-white p-3 rounded-xl border border-dashed border-gray-200 text-center">
-                      No disciplinary bookings scripted. Click &apos;Add Card&apos; to schedule bookings.
+                      No disciplinary bookings scripted. Click &apos;Add Card / Booking&apos; to schedule bookings.
                     </p>
                   ) : (
                     cardSchedule.map((c, idx) => (
@@ -1462,109 +1338,7 @@ export default function CustomGames() {
                   <div className="p-2 rounded-lg bg-amber-50/60 border border-amber-100 text-[10px] text-amber-800 flex items-center gap-1.5">
                     <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-amber-600" />
                     <span>
-                      Red & 2nd Yellow cards validate <strong>&apos;Red Card in Match&apos;</strong> as Yes and count toward <strong>&apos;Total Cards Over/Under 3.5&apos;</strong>.
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* 📺 TAB 4: VAR REVIEWS SCRIPTING */}
-              {eventScriptTab === 'var' && (
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-[11px] font-bold text-gray-700">
-                        VAR Reviews & Checks ({varSchedule.length})
-                      </span>
-                      <p className="text-[10px] text-gray-400">
-                        Script Video Assistant Referee decisions and on-field reviews
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleAddVarRow}
-                      className="inline-flex items-center gap-1 text-xs font-bold text-[#00b074] bg-[#d9f3ea] px-2.5 py-1 rounded-lg"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Add VAR Check</span>
-                    </button>
-                  </div>
-
-                  {varSchedule.length === 0 ? (
-                    <p className="text-[11px] text-gray-400 italic bg-white p-3 rounded-xl border border-dashed border-gray-200 text-center">
-                      No VAR reviews scripted for this match. Click &apos;Add VAR Check&apos; to schedule one.
-                    </p>
-                  ) : (
-                    varSchedule.map((v, idx) => (
-                      <div
-                        key={idx}
-                        className="flex flex-wrap sm:flex-nowrap items-center gap-2 bg-white rounded-xl p-2.5 border border-gray-200"
-                      >
-                        <div className="flex items-center gap-1 w-18">
-                          <input
-                            type="number"
-                            min="1"
-                            max="120"
-                            value={v.minute}
-                            onChange={(e) =>
-                              handleUpdateVarRow(idx, 'minute', e.target.value)
-                            }
-                            className="w-12 rounded-lg border border-gray-200 px-2 py-1 text-xs font-extrabold text-center"
-                          />
-                          <span className="text-xs font-bold text-gray-400">&apos;</span>
-                        </div>
-
-                        <select
-                          value={v.team || 'HOME'}
-                          onChange={(e) =>
-                            handleUpdateVarRow(idx, 'team', e.target.value)
-                          }
-                          className="rounded-lg border border-gray-200 px-2 py-1 text-xs font-bold text-gray-800"
-                        >
-                          <option value="HOME">{homeTeam || 'Home'}</option>
-                          <option value="AWAY">{awayTeam || 'Away'}</option>
-                        </select>
-
-                        <select
-                          value={v.decision}
-                          onChange={(e) =>
-                            handleUpdateVarRow(idx, 'decision', e.target.value)
-                          }
-                          className="rounded-lg border border-blue-200 bg-blue-50/70 text-blue-900 px-2 py-1 text-xs font-extrabold"
-                        >
-                          <option value="GOAL_CHECK_CONFIRMED">📺 Goal Confirmed (Onside)</option>
-                          <option value="GOAL_DISALLOWED">❌ Goal Disallowed by VAR</option>
-                          <option value="PENALTY_AWARDED">🎯 Penalty Awarded by VAR</option>
-                          <option value="PENALTY_CANCELLED">🚫 Penalty Overturned</option>
-                          <option value="RED_CARD_CONFIRMED">🟥 Red Card Upheld / Given</option>
-                          <option value="OFFSIDE_OVERTURN">🚩 Offside Overturned</option>
-                        </select>
-
-                        <input
-                          type="text"
-                          value={v.description || ''}
-                          onChange={(e) =>
-                            handleUpdateVarRow(idx, 'description', e.target.value)
-                          }
-                          placeholder="VAR Note (e.g. Hand-ball check inside box)"
-                          className="flex-1 min-w-[120px] rounded-lg border border-gray-200 px-2.5 py-1 text-xs"
-                        />
-
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveVarRow(idx)}
-                          className="p-1 text-gray-400 hover:text-red-500"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))
-                  )}
-
-                  <div className="p-2 rounded-lg bg-blue-50/60 border border-blue-100 text-[10px] text-blue-800 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-blue-600" />
-                    <span>
-                      Scripted VAR reviews validate <strong>&apos;VAR Review in Match&apos;</strong> as Yes and display in live match trackers.
+                      Red &amp; 2nd Yellow cards validate <strong>&apos;Red Card in Match&apos;</strong> as Yes and count toward <strong>&apos;Total Cards Over/Under 3.5&apos;</strong> &amp; <strong>&apos;Total Bookings Over/Under 4.5&apos;</strong>.
                     </span>
                   </div>
                 </div>
