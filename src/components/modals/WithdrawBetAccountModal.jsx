@@ -172,7 +172,7 @@ export default function WithdrawBetAccountModal({
           <div className="flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-200/50 p-2.5">
             <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
             <p className="text-[10px] text-amber-800 font-semibold leading-tight">
-              Deducts from internal account balance. No funds leave the live Moolre payment float.
+              Deducts from internal account balance. No funds leave the live Paystack payment float.
             </p>
           </div>
 

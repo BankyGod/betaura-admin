@@ -69,7 +69,7 @@ export default function BalanceCard({
 
   // SUPER ADMIN CAROUSEL:
   // Slide 0: Total Balance (All Funds: Funded + Real)
-  // Slide 1: Live Funds (ONLY Real Money Deposited into Moolre Wallet)
+  // Slide 1: Live Funds (ONLY Real Money Deposited into Paystack Wallet)
   const isLiveSlide = activeSlide === 1;
 
   return (
@@ -146,7 +146,7 @@ export default function BalanceCard({
             {isLiveSlide ? (
               <span className="flex items-center gap-1.5 text-emerald-200">
                 <ShieldCheck className="w-4 h-4 text-emerald-300" />
-                Live Funds (Moolre Wallet Only)
+                Live Funds (Paystack Wallet Only)
               </span>
             ) : (
               <span className="flex items-center gap-1.5 text-white/90">
@@ -192,7 +192,7 @@ export default function BalanceCard({
             +{formatCurrency(isLiveSlide ? liveFundsToday : todayGain)}
           </span>
           <span className="text-white/80">
-            {isLiveSlide ? 'Moolre Today' : subLabel}
+            {isLiveSlide ? 'Paystack Today' : subLabel}
           </span>
         </div>
 

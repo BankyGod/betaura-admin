@@ -119,7 +119,7 @@ export default function WithdrawalSuccessModal({ isOpen, onClose, data }) {
         <div className="flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-200/60 p-2.5 text-left">
           <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0" />
           <p className="text-[10px] text-amber-800 font-semibold leading-tight">
-            Security audit: Zero funds deducted from Moolre gateway reserves. Internal balance updated instantly.
+            Security audit: Zero funds deducted from Paystack gateway reserves. Internal balance updated instantly.
           </p>
         </div>
 
