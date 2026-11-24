@@ -208,7 +208,7 @@ export function useDashboardData() {
 
           if (txRes.status === 'fulfilled' && Array.isArray(txRes.value?.data)) {
             const refTxs = txRes.value.data.filter((t) =>
-              ['REFERRAL_BONUS', 'BONUS'].includes((t.type || '').toUpperCase())
+              ['SUB_ADMIN_COMMISSION', 'REFERRAL_BONUS', 'BONUS'].includes((t.type || '').toUpperCase())
             );
             next.recentPayments = refTxs.map((tx, idx) => ({
               id: tx.id || idx,
