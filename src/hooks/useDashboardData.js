@@ -415,6 +415,20 @@ export function useDashboardData() {
   useEffect(() => {
     if (authReady) {
       loadDashboard();
+      // Auto-refresh every 15s to keep live Paystack wallet funds strictly accurate
+      const timer = setInterval(() => {
+        loadDashboard();
+      }, 15000);
+
+      const handleFocus = () => {
+        loadDashboard();
+      };
+      window.addEventListener('focus', handleFocus);
+
+      return () => {
+        clearInterval(timer);
+        window.removeEventListener('focus', handleFocus);
+      };
     }
   }, [authReady, loadDashboard]);
 
