@@ -19,6 +19,7 @@ import {
   History,
   Banknote,
   AlertCircle,
+  UserMinus,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../utils/formatters';
@@ -72,6 +73,29 @@ export default function SubAdminEarnings() {
   const [payoutSubmitting, setPayoutSubmitting] = useState(false);
   const [payoutError, setPayoutError] = useState('');
   const [bannerMessage, setBannerMessage] = useState('');
+
+  // Demote Sub-Admin to Punter State
+  const [demoteTarget, setDemoteTarget] = useState(null);
+  const [demoteSubmitting, setDemoteSubmitting] = useState(false);
+  const [demoteError, setDemoteError] = useState('');
+
+  const handleDemoteSubAdmin = async () => {
+    if (!demoteTarget) return;
+    setDemoteSubmitting(true);
+    setDemoteError('');
+    try {
+      const res = await apiClient.post(`/api/v1/admin/sub-admins/${encodeURIComponent(demoteTarget.id)}/demote`);
+      const msg = res.data?.message || `Successfully removed ${demoteTarget.name} from Sub-Admins and demoted to a regular punter.`;
+      setBannerMessage(msg);
+      setDemoteTarget(null);
+      await refreshSubAdmins?.();
+      setTimeout(() => setBannerMessage(''), 8000);
+    } catch (err) {
+      setDemoteError(err.response?.data?.detail || err.message || 'Failed to demote sub-admin.');
+    } finally {
+      setDemoteSubmitting(false);
+    }
+  };
 
   // Payout History State
   const [payoutHistory, setPayoutHistory] = useState([]);
@@ -616,6 +640,20 @@ export default function SubAdminEarnings() {
                                 Fund
                               </button>
                             )}
+                            {isSuperAdmin && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDemoteTarget(sub);
+                                  setDemoteError('');
+                                }}
+                                className="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-[11px] rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1"
+                                title="Remove Sub-Admin and demote to regular punter"
+                              >
+                                <UserMinus className="w-3 h-3" />
+                                <span>Demote</span>
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1001,6 +1039,91 @@ export default function SubAdminEarnings() {
             refreshSubAdmins?.();
           }}
         />
+      )}
+
+      {/* Demote Sub-Admin to Regular Punter Modal */}
+      {demoteTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
+          onClick={() => !demoteSubmitting && setDemoteTarget(null)}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div className="flex items-center gap-2.5 text-rose-700">
+                <div className="w-10 h-10 rounded-2xl bg-rose-100 border border-rose-200 flex items-center justify-center shrink-0">
+                  <UserMinus className="w-5 h-5 text-rose-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-gray-900 leading-tight">Demote to Regular Punter</h3>
+                  <p className="text-[11px] text-gray-400">Remove from Sub-Admin role</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => !demoteSubmitting && setDemoteTarget(null)}
+                className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="py-4 space-y-3 text-xs text-gray-600">
+              <p className="leading-relaxed">
+                Are you sure you want to remove <strong className="text-gray-900">{demoteTarget.name}</strong> (<span className="font-mono text-purple-700 font-bold">@{demoteTarget.username}</span>) from Sub-Admins?
+              </p>
+              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-3.5 text-rose-900 space-y-1.5 text-[11px] leading-relaxed">
+                <p className="font-black flex items-center gap-1.5 text-rose-800">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                  What happens when demoted:
+                </p>
+                <ul className="list-disc pl-5 space-y-1 text-rose-700">
+                  <li>Account role will be downgraded to <strong>ROLE_PUNTER</strong> (regular/normal punter).</li>
+                  <li>All back-office access to the Admin Dashboard will be immediately revoked.</li>
+                  <li>Player wallet balance and personal betting records remain completely safe.</li>
+                </ul>
+              </div>
+
+              {demoteError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl font-bold text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+                  <span>{demoteError}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+              <button
+                type="button"
+                disabled={demoteSubmitting}
+                onClick={() => setDemoteTarget(null)}
+                className="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 font-bold text-xs cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={demoteSubmitting}
+                onClick={handleDemoteSubAdmin}
+                className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-extrabold text-xs cursor-pointer shadow-md shadow-rose-600/20 inline-flex items-center gap-1.5 transition-all disabled:opacity-50"
+              >
+                {demoteSubmitting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Demoting...</span>
+                  </>
+                ) : (
+                  <>
+                    <UserMinus className="w-3.5 h-3.5" />
+                    <span>Yes, Demote to Regular Punter</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

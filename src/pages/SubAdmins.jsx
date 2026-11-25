@@ -892,15 +892,26 @@ export default function SubAdmins() {
 
   async function handleDeleteSubAdmin(sub) {
     if (!canManageSubs) return;
+    if (
+      !window.confirm(
+        `Are you sure you want to remove ${sub.name} (@${sub.username}) from Sub-Admins and demote them to a normal/regular punter?\n\nThey will lose back-office access while keeping their player betting account intact.`
+      )
+    ) {
+      return;
+    }
     setSubAdmins((prev) => prev.filter((s) => s.id !== sub.id));
     if (admin?.id === sub.id) {
       switchActiveAdmin('SUPER');
     }
-    setMsg(`Removed Sub-Admin ${sub.name}.`);
+    setMsg(`Removed Sub-Admin ${sub.name} and demoted to a regular punter.`);
     try {
-      await adminApi.deleteSubAdmin(sub.id);
+      await adminApi.demoteSubAdmin(sub.id);
     } catch {
-      // ignore
+      try {
+        await adminApi.deleteSubAdmin(sub.id);
+      } catch (err) {
+        setMsg(`Failed to demote sub-admin: ${err.message || 'Error'}`);
+      }
     }
   }
 
@@ -1494,8 +1505,8 @@ export default function SubAdmins() {
                       <button
                         type="button"
                         onClick={() => handleDeleteSubAdmin(sub)}
-                        className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
-                        title="Delete Sub-Admin"
+                        className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors cursor-pointer"
+                        title="Remove Sub-Admin and Demote to Regular Punter"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

@@ -106,6 +106,8 @@ export const adminApi = {
   saveSubAdmin: (payload) => apiClient.post('/api/v1/admin/sub-admins', payload),
   deleteSubAdmin: (subId) =>
     apiClient.delete(`/api/v1/admin/sub-admins/${encodeURIComponent(subId)}`),
+  demoteSubAdmin: (subId) =>
+    apiClient.post(`/api/v1/admin/sub-admins/${encodeURIComponent(subId)}/demote`),
   changeSubAdminPassword: (subId, payload) =>
     apiClient.post(
       `/api/v1/admin/sub-admins/${encodeURIComponent(subId)}/change-password`,
