@@ -1058,8 +1058,8 @@ export default function CustomGames() {
                     Match Scripting: Goals &amp; Bookings (Cards)
                   </h4>
                 </div>
-                <span className="text-[10px] text-gray-400 font-medium">
-                  Script live goals, cards and bookings timeline
+                <span className="text-[10px] text-gray-500 font-bold bg-white px-2 py-0.5 rounded-full border border-gray-200">
+                  ⏱️ Full 90 Min Match (45m 1H • 15m HT Break • 45m 2H)
                 </span>
               </div>
 
@@ -1559,6 +1559,9 @@ export default function CustomGames() {
                           </strong>
                         </p>
                         <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[10px] font-bold">
+                            ⏱️ 90m (15m HT Break)
+                          </span>
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold">
                             ⚽ {Array.isArray(g.goal_schedule) ? g.goal_schedule.length : 0} Goals
                           </span>
