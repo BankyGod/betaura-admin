@@ -19,7 +19,9 @@ export default function FundBetAccountModal({
   if (!isOpen || !target) return null;
 
   const connAcc = target.connectedBetauraAccount || target.connected_betaura_account;
-  const targetName = target.name || target.username || 'Sub-Admin';
+  const isSuper = Boolean(target.isSuperAdmin);
+  const isSub = Boolean(target.isSubAdmin || target.subAdminCode || target.role === 'ROLE_SUB_ADMIN');
+  const targetName = target.name || target.username || (isSub ? 'Sub-Admin' : 'Punter');
   const targetPhone = connAcc?.phone_number || target.phone_number || target.phone || '';
   const targetUsername = connAcc?.username || target.username || '';
   const currentBalance = Number(connAcc?.balance ?? target.balance ?? 0);
@@ -37,7 +39,8 @@ export default function FundBetAccountModal({
       setError('');
       const payload = {
         sub_id: target.id,
-        identifier: targetPhone || targetUsername,
+        user_id: target.id,
+        identifier: targetPhone || targetUsername || target.id,
         amount: val,
         note: note.trim() || undefined,
       };
@@ -51,7 +54,7 @@ export default function FundBetAccountModal({
         err.response?.data?.detail ||
           err.response?.data?.message ||
           err.message ||
-          'Failed to fund connected bet account.'
+          'Failed to fund account.'
       );
     } finally {
       setLoading(false);
@@ -74,10 +77,10 @@ export default function FundBetAccountModal({
             </div>
             <div>
               <h3 className="text-base font-extrabold text-gray-900">
-                Fund Connected Bet Account
+                {isSuper ? 'Fund Super Admin Bet Account' : isSub ? 'Fund Sub-Admin Bet Account' : 'Fund Punter Wallet'}
               </h3>
               <p className="text-[11px] text-gray-500">
-                Credits the user&apos;s real BetAura betting wallet (PostgreSQL)
+                Credits the player&apos;s real BetAura betting wallet (PostgreSQL)
               </p>
             </div>
           </div>
@@ -94,15 +97,17 @@ export default function FundBetAccountModal({
         <div className="rounded-2xl bg-[#eaf7ef] border border-[#00b074]/30 p-3.5 space-y-1">
           <div className="flex items-center justify-between text-xs">
             <span className="font-extrabold text-gray-900">
-              {targetName} (@{targetUsername})
+              {targetName} {targetUsername ? `(@${targetUsername})` : ''}
             </span>
             <span className="px-2 py-0.5 rounded-full bg-[#00b074] text-white text-[10px] font-black uppercase">
-              {target.isSuperAdmin ? 'Super Admin' : 'Sub-Admin'}
+              {isSuper ? 'Super Admin' : isSub ? 'Sub-Admin' : 'Punter'}
             </span>
           </div>
-          <p className="text-xs text-gray-600 font-mono">
-            {targetPhone}
-          </p>
+          {targetPhone && (
+            <p className="text-xs text-gray-600 font-mono">
+              {targetPhone}
+            </p>
+          )}
           <div className="flex items-center justify-between pt-1 border-t border-[#00b074]/20 text-xs">
             <span className="text-gray-500 font-medium">Current Bet Balance:</span>
             <span className="font-extrabold text-[#00b074]">

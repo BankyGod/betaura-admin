@@ -162,6 +162,8 @@ export const adminApi = {
   // =========================================================================
   fundConnectedAccount: (payload) =>
     apiClient.post('/api/v1/admin/fund-connected-account', payload),
+  fundCustomer: (customerId, payload) =>
+    apiClient.post(`/api/v1/admin/customers/${encodeURIComponent(customerId)}/fund`, payload),
   adminWithdraw: (payload) =>
     apiClient.post('/api/v1/admin/withdraw-connected-account', payload),
 };

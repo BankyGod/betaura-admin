@@ -12,10 +12,13 @@ import {
   Link2,
   Key,
   Edit3,
+  PlusCircle,
+  Wallet,
 } from 'lucide-react';
 import { adminApi } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../utils/formatters';
+import FundBetAccountModal from '../components/modals/FundBetAccountModal';
 
 const LEVEL_LABELS = {
   1: 'Level 1 (ID Required)',
@@ -37,6 +40,7 @@ export default function Customers() {
   const [newPassword, setNewPassword] = useState('');
   const [msg, setMsg] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [fundTarget, setFundTarget] = useState(null);
   const [editingReferrer, setEditingReferrer] = useState(false);
   const [selectedSubAdminCode, setSelectedSubAdminCode] = useState('');
   const [creditRetroactive, setCreditRetroactive] = useState(true);
@@ -634,9 +638,20 @@ export default function Customers() {
 
                 {canManage && (
                   <div
-                    className="grid grid-cols-4 gap-1.5 pt-2 border-t border-gray-100"
+                    className={`grid ${admin?.isSuperAdmin ? 'grid-cols-5' : 'grid-cols-4'} gap-1.5 pt-2 border-t border-gray-100`}
                     onClick={(e) => e.stopPropagation()}
                   >
+                    {admin?.isSuperAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => setFundTarget(c)}
+                        className="inline-flex items-center justify-center gap-1 rounded-xl bg-[#00b074] hover:bg-[#0a873c] text-white py-1.5 text-[10px] font-extrabold shadow-xs"
+                        title="Fund Punter Wallet"
+                      >
+                        <PlusCircle className="w-3 h-3" />
+                        <span>Fund</span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleResetPassword(c)}
@@ -758,6 +773,18 @@ export default function Customers() {
                       >
                         {canManage && (
                           <div className="inline-flex items-center gap-2">
+                            {admin?.isSuperAdmin && (
+                              <button
+                                type="button"
+                                onClick={() => setFundTarget(c)}
+                                className="inline-flex items-center gap-1 rounded-lg bg-[#00b074] hover:bg-[#0a873c] text-white px-2.5 py-1.5 text-[11px] font-extrabold transition shadow-xs"
+                                title="Fund Punter Wallet"
+                              >
+                                <PlusCircle className="w-3.5 h-3.5" />
+                                <span>Fund</span>
+                              </button>
+                            )}
+
                             <button
                               type="button"
                               onClick={() => handleResetPassword(c)}
@@ -1006,13 +1033,26 @@ export default function Customers() {
                   </span>
                 </div>
               )}
-              <div className="rounded-xl bg-gray-50 p-3">
-                <span className="text-[10px] text-gray-400 uppercase font-bold block">
-                  Wallet Balance
-                </span>
-                <span className="text-sm font-extrabold text-[#00b074] mt-0.5 block">
-                  {formatCurrency(selectedPlayer.balance)}
-                </span>
+              <div className="rounded-xl bg-gray-50 p-3 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-gray-400 uppercase font-bold block">
+                    Wallet Balance
+                  </span>
+                  <span className="text-sm font-extrabold text-[#00b074] mt-0.5 block">
+                    {formatCurrency(selectedPlayer.balance)}
+                  </span>
+                </div>
+                {admin?.isSuperAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => setFundTarget(selectedPlayer)}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#00b074] hover:bg-[#0a873c] text-white px-3 py-1.5 text-xs font-extrabold transition shadow-xs"
+                    title="Fund Punter Wallet"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    <span>Fund Player</span>
+                  </button>
+                )}
               </div>
               <div className="rounded-xl bg-gray-50 p-3">
                 <span className="text-[10px] text-gray-400 uppercase font-bold block">
@@ -1051,6 +1091,29 @@ export default function Customers() {
             </div>
           </div>
         </div>
+      )}
+      {/* Super Admin Fund Punter Modal */}
+      {fundTarget && (
+        <FundBetAccountModal
+          isOpen={Boolean(fundTarget)}
+          target={fundTarget}
+          onClose={() => setFundTarget(null)}
+          onSuccess={(data) => {
+            setMsg(
+              `Successfully funded GH₵ ${data.amount} to ${data.username || fundTarget.name || 'player'}'s wallet. New balance: ${formatCurrency(data.new_balance)}.`
+            );
+            setCustomers((prev) =>
+              prev.map((cust) =>
+                cust.id === fundTarget.id
+                  ? { ...cust, balance: data.new_balance }
+                  : cust
+              )
+            );
+            if (selectedPlayer && selectedPlayer.id === fundTarget.id) {
+              setSelectedPlayer((prev) => ({ ...prev, balance: data.new_balance }));
+            }
+          }}
+        />
       )}
     </div>
   );
