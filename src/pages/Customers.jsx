@@ -1175,29 +1175,8 @@ export default function Customers() {
   );
 }
 
-export function CustomerDetail() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900">
-          KYC Document & Biometric Verification Desk
-        </h2>
-        <p className="text-xs text-gray-400 mt-0.5">
-          Automated Ghana Card / Passport OCR & liveness verification
-        </p>
-      </div>
+import KYCVerification from './KYCVerification';
 
-      <div className="bg-white rounded-2xl p-8 sm:p-12 shadow-xs border border-gray-100 text-center space-y-3">
-        <span className="inline-block px-3.5 py-1.5 rounded-full bg-amber-100 text-amber-800 text-xs font-extrabold uppercase tracking-wider">
-          Coming Soon
-        </span>
-        <h3 className="text-lg font-extrabold text-gray-900">
-          Automated KYC ID Document Scanner — Coming Soon
-        </h3>
-        <p className="text-xs text-gray-500 max-w-md mx-auto">
-          Direct ID upload and biometric verification API integration is coming soon. In the meantime, Super Admin can upgrade player levels (Level 1 – Level 4) directly on the Customers &amp; Tiers page.
-        </p>
-      </div>
-    </div>
-  );
+export function CustomerDetail() {
+  return <KYCVerification />;
 }

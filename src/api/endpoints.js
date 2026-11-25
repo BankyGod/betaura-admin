@@ -131,8 +131,14 @@ export const adminApi = {
     apiClient.post('/api/v1/admin/trading/override-odds', payload),
   settleMatch: (payload) =>
     apiClient.post('/api/v1/admin/settlement/settle-match', payload),
+  getKycSubmissions: (status) =>
+    apiClient.get('/api/v1/admin/kyc/submissions', {
+      params: status ? { status_filter: status } : {},
+    }),
   approveKyc: (userId) =>
     apiClient.post(`/api/v1/admin/kyc/${encodeURIComponent(userId)}/approve`),
+  denyKyc: (userId, payload) =>
+    apiClient.post(`/api/v1/admin/kyc/${encodeURIComponent(userId)}/deny`, payload),
   approveWithdrawal: (transactionId) =>
     apiClient.post(
       `/api/v1/admin/finance/withdrawals/${encodeURIComponent(transactionId)}/approve`
