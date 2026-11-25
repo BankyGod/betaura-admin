@@ -13,12 +13,14 @@ import {
   Key,
   Edit3,
   PlusCircle,
+  MinusCircle,
   Wallet,
 } from 'lucide-react';
 import { adminApi } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../utils/formatters';
 import FundBetAccountModal from '../components/modals/FundBetAccountModal';
+import DeductBetAccountModal from '../components/modals/DeductBetAccountModal';
 
 const LEVEL_LABELS = {
   1: 'Level 1 (ID Required)',
@@ -30,7 +32,13 @@ const LEVEL_LABELS = {
 
 export default function Customers() {
   const { admin, hasPermission, subAdmins } = useAuth();
-  const canManage = hasPermission('manage_users');
+  const canManage =
+    hasPermission('manage_users') ||
+    hasPermission('adjust_balance') ||
+    admin?.isSuperAdmin ||
+    admin?.role === 'ROLE_SUPER_ADMIN' ||
+    admin?.role === 'ROLE_SUB_ADMIN' ||
+    admin?.isSubAdmin;
 
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +49,7 @@ export default function Customers() {
   const [msg, setMsg] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [fundTarget, setFundTarget] = useState(null);
+  const [deductTarget, setDeductTarget] = useState(null);
   const [editingReferrer, setEditingReferrer] = useState(false);
   const [selectedSubAdminCode, setSelectedSubAdminCode] = useState('');
   const [creditRetroactive, setCreditRetroactive] = useState(true);
@@ -638,20 +647,27 @@ export default function Customers() {
 
                 {canManage && (
                   <div
-                    className={`grid ${admin?.isSuperAdmin ? 'grid-cols-5' : 'grid-cols-4'} gap-1.5 pt-2 border-t border-gray-100`}
+                    className="grid grid-cols-5 gap-1.5 pt-2 border-t border-gray-100"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {admin?.isSuperAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => setFundTarget(c)}
-                        className="inline-flex items-center justify-center gap-1 rounded-xl bg-[#00b074] hover:bg-[#0a873c] text-white py-1.5 text-[10px] font-extrabold shadow-xs"
-                        title="Fund Punter Wallet"
-                      >
-                        <PlusCircle className="w-3 h-3" />
-                        <span>Fund</span>
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setFundTarget(c)}
+                      className="inline-flex items-center justify-center gap-1 rounded-xl bg-[#00b074] hover:bg-[#0a873c] text-white py-1.5 text-[10px] font-extrabold shadow-xs"
+                      title="Fund Punter Wallet"
+                    >
+                      <PlusCircle className="w-3 h-3" />
+                      <span>Fund</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeductTarget(c)}
+                      className="inline-flex items-center justify-center gap-1 rounded-xl bg-rose-600 hover:bg-rose-700 text-white py-1.5 text-[10px] font-extrabold shadow-xs"
+                      title="Deduct Money from Punter Wallet"
+                    >
+                      <MinusCircle className="w-3 h-3" />
+                      <span>Deduct</span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => handleResetPassword(c)}
@@ -772,18 +788,26 @@ export default function Customers() {
                         onClick={(e) => e.stopPropagation()}
                       >
                         {canManage && (
-                          <div className="inline-flex items-center gap-2">
-                            {admin?.isSuperAdmin && (
-                              <button
-                                type="button"
-                                onClick={() => setFundTarget(c)}
-                                className="inline-flex items-center gap-1 rounded-lg bg-[#00b074] hover:bg-[#0a873c] text-white px-2.5 py-1.5 text-[11px] font-extrabold transition shadow-xs"
-                                title="Fund Punter Wallet"
-                              >
-                                <PlusCircle className="w-3.5 h-3.5" />
-                                <span>Fund</span>
-                              </button>
-                            )}
+                          <div className="inline-flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setFundTarget(c)}
+                              className="inline-flex items-center gap-1 rounded-lg bg-[#00b074] hover:bg-[#0a873c] text-white px-2.5 py-1.5 text-[11px] font-extrabold transition shadow-xs cursor-pointer"
+                              title="Fund Punter Wallet"
+                            >
+                              <PlusCircle className="w-3.5 h-3.5" />
+                              <span>Fund</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setDeductTarget(c)}
+                              className="inline-flex items-center gap-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1.5 text-[11px] font-extrabold transition shadow-xs cursor-pointer"
+                              title="Deduct Money from Punter Wallet"
+                            >
+                              <MinusCircle className="w-3.5 h-3.5" />
+                              <span>Deduct</span>
+                            </button>
 
                             <button
                               type="button"
@@ -1042,17 +1066,26 @@ export default function Customers() {
                     {formatCurrency(selectedPlayer.balance)}
                   </span>
                 </div>
-                {admin?.isSuperAdmin && (
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => setFundTarget(selectedPlayer)}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#00b074] hover:bg-[#0a873c] text-white px-3 py-1.5 text-xs font-extrabold transition shadow-xs"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#00b074] hover:bg-[#0a873c] text-white px-3 py-1.5 text-xs font-extrabold transition shadow-xs cursor-pointer"
                     title="Fund Punter Wallet"
                   >
                     <PlusCircle className="w-3.5 h-3.5" />
-                    <span>Fund Player</span>
+                    <span>Fund</span>
                   </button>
-                )}
+                  <button
+                    type="button"
+                    onClick={() => setDeductTarget(selectedPlayer)}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 text-xs font-extrabold transition shadow-xs cursor-pointer"
+                    title="Deduct Money from Punter Wallet"
+                  >
+                    <MinusCircle className="w-3.5 h-3.5" />
+                    <span>Deduct</span>
+                  </button>
+                </div>
               </div>
               <div className="rounded-xl bg-gray-50 p-3">
                 <span className="text-[10px] text-gray-400 uppercase font-bold block">
@@ -1110,6 +1143,29 @@ export default function Customers() {
               )
             );
             if (selectedPlayer && selectedPlayer.id === fundTarget.id) {
+              setSelectedPlayer((prev) => ({ ...prev, balance: data.new_balance }));
+            }
+          }}
+        />
+      )}
+      {/* Deduct Punter Modal (Accessible to Sub-Admin & Super Admin) */}
+      {deductTarget && (
+        <DeductBetAccountModal
+          isOpen={Boolean(deductTarget)}
+          target={deductTarget}
+          onClose={() => setDeductTarget(null)}
+          onSuccess={(data) => {
+            setMsg(
+              `Successfully deducted GH₵ ${data.amount} from ${data.username || deductTarget.name || 'player'}'s wallet. New balance: ${formatCurrency(data.new_balance)}.`
+            );
+            setCustomers((prev) =>
+              prev.map((cust) =>
+                cust.id === deductTarget.id
+                  ? { ...cust, balance: data.new_balance }
+                  : cust
+              )
+            );
+            if (selectedPlayer && selectedPlayer.id === deductTarget.id) {
               setSelectedPlayer((prev) => ({ ...prev, balance: data.new_balance }));
             }
           }}

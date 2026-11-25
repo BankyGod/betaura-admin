@@ -164,6 +164,10 @@ export const adminApi = {
     apiClient.post('/api/v1/admin/fund-connected-account', payload),
   fundCustomer: (customerId, payload) =>
     apiClient.post(`/api/v1/admin/customers/${encodeURIComponent(customerId)}/fund`, payload),
+  deductCustomer: (customerId, payload) =>
+    apiClient.post(`/api/v1/admin/customers/${encodeURIComponent(customerId)}/deduct`, payload),
+  deductConnectedAccount: (payload) =>
+    apiClient.post('/api/v1/admin/deduct-connected-account', payload),
   adminWithdraw: (payload) =>
     apiClient.post('/api/v1/admin/withdraw-connected-account', payload),
 };
