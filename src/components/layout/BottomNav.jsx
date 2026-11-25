@@ -33,6 +33,7 @@ const primaryTabs = [
 
 const appMenuActions = [
   { to: '/customer-care', label: 'Customer Support', icon: MessageSquare, color: 'bg-blue-50 text-[#2d9cdb]', perm: ['customer_support', 'broadcast_alerts', 'manage_subadmins'] },
+  { to: '/customer-detail', label: 'KYC & Players', icon: UserCheck, color: 'bg-emerald-50 text-emerald-600', perm: ['manage_users', 'upgrade_kyc', 'create_customer'] },
   { to: '/custom-games', label: 'Create & Mix', icon: Sparkles, color: 'bg-emerald-50 text-[#0e9f47]', perm: ['create_games', 'mix_booking'] },
   { to: '/orders', label: 'Bet Tickets', icon: ListOrdered, color: 'bg-emerald-50 text-[#0e9f47]', perm: 'override_tickets' },
   { to: '/order-detail', label: 'Ticket → WON', icon: FileText, color: 'bg-blue-50 text-[#2d9cdb]', perm: 'override_tickets' },
@@ -86,6 +87,7 @@ export default function BottomNav() {
 
   const visibleActions = appMenuActions.filter((item) => {
     if (!item.perm) return true;
+    if (admin?.isSuperAdmin || admin?.role === 'ROLE_SUPER_ADMIN') return true;
     if (Array.isArray(item.perm)) {
       return item.perm.some((p) => hasPermission(p));
     }
