@@ -12,6 +12,12 @@ import {
   Trophy,
   Ticket,
   CheckCircle2,
+  SlidersHorizontal,
+  ChevronDown,
+  ChevronUp,
+  Minus,
+  Zap,
+  RotateCcw,
 } from 'lucide-react';
 import { adminApi } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
@@ -246,6 +252,7 @@ export default function CustomGames() {
   const [copiedCode, setCopiedCode] = useState('');
   const [statusBanner, setStatusBanner] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
     try {
@@ -393,21 +400,44 @@ export default function CustomGames() {
       setGoalSchedule([]);
       return;
     }
-    const generated = [];
+
+    const goalPool = [];
     for (let i = 0; i < h; i++) {
-      generated.push({
-        minute: Math.min(89, Math.round(((i + 1) / (h + 1)) * 85)),
-        team: 'HOME',
-        scorer: `Home Goal #${i + 1}`,
-      });
+      goalPool.push({ team: 'HOME' });
     }
     for (let j = 0; j < a; j++) {
-      generated.push({
-        minute: Math.min(90, Math.round(((j + 1) / (a + 1)) * 82) + 4),
-        team: 'AWAY',
-        scorer: `Away Goal #${j + 1}`,
-      });
+      goalPool.push({ team: 'AWAY' });
     }
+
+    // Shuffle sequence of goals
+    for (let i = goalPool.length - 1; i > 0; i--) {
+      const r = Math.floor(Math.random() * (i + 1));
+      [goalPool[i], goalPool[r]] = [goalPool[r], goalPool[i]];
+    }
+
+    // Distribute minutes across standard 90 mins (1'-44' for 1H, 50'-90'+ for 2H)
+    const step = Math.max(8, Math.floor(75 / (total + 1)));
+    const usedMins = new Set();
+    const generated = goalPool.map((g, idx) => {
+      let m = 10 + (idx + 1) * step + (Math.floor(Math.random() * 5) - 2);
+      // Skip the 45'-49' half-time interval
+      if (m >= 45 && m <= 49) {
+        m = 51 + (idx % 3) * 4;
+      }
+      m = Math.max(6, Math.min(92, m));
+      while (usedMins.has(m)) {
+        m = Math.min(93, m + 2);
+      }
+      usedMins.add(m);
+
+      const isH = g.team === 'HOME';
+      return {
+        minute: m,
+        team: g.team,
+        scorer: `${isH ? (homeTeam || 'Home') : (awayTeam || 'Away')} Goal #${idx + 1}`,
+      };
+    });
+
     generated.sort((x, y) => x.minute - y.minute);
     setGoalSchedule(generated);
   }
@@ -989,65 +1019,258 @@ export default function CustomGames() {
                   ))}
                 </div>
               </div>
-              <div className="sm:col-span-2">
-                <label className="block text-[11px] font-bold text-gray-600 mb-1">
-                  Custom Game ID <span className="text-gray-400 font-normal">(Optional — leave blank to auto-generate)</span>
-                </label>
-                <input
-                  type="text"
-                  value={customGameId}
-                  disabled={Boolean(editingId)}
-                  onChange={(e) => setCustomGameId(e.target.value)}
-                  placeholder="e.g. VIP2026 or MATCH884"
-                  className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs font-mono font-bold disabled:bg-gray-50 disabled:text-gray-400"
-                />
-              </div>
             </div>
 
-            {/* Privacy Toggle & Match Status */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
-              <div
-                onClick={() => setIsPrivate(!isPrivate)}
-                className={`cursor-pointer rounded-2xl p-3.5 border transition flex items-center gap-3 ${
-                  isPrivate
-                    ? 'bg-amber-50/70 border-amber-300 text-amber-900'
-                    : 'bg-emerald-50/70 border-emerald-300 text-emerald-900'
-                }`}
-              >
+            {/* Quick Privacy Toggle */}
+            <div
+              onClick={() => setIsPrivate(!isPrivate)}
+              className={`cursor-pointer rounded-2xl p-3 border transition flex items-center justify-between gap-3 ${
+                isPrivate
+                  ? 'bg-amber-50/70 border-amber-300 text-amber-900'
+                  : 'bg-emerald-50/70 border-emerald-300 text-emerald-900'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
                 {isPrivate ? (
                   <Lock className="w-5 h-5 text-amber-600 shrink-0" />
                 ) : (
                   <Globe className="w-5 h-5 text-[#00b074] shrink-0" />
                 )}
                 <div>
-                  <p className="text-xs font-extrabold">
-                    {isPrivate
-                      ? 'Private Game (Booking Slip Only)'
-                      : 'Public Game (Visible in Feed)'}
+                  <p className="text-xs font-black">
+                    {isPrivate ? 'Private Match (Booking Slip Only)' : 'Public Match (Visible to All Users)'}
                   </p>
                   <p className="text-[10px] opacity-80">
                     {isPrivate
-                      ? 'Hidden from public until Super Admin shares booking code'
-                      : 'Shown to all users on the main matches list'}
+                      ? 'Hidden from public matches list — bets can only be loaded via booking code'
+                      : 'Active and visible in the public sportsbook matches feed'}
                   </p>
                 </div>
               </div>
+              <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                isPrivate ? 'bg-amber-200 text-amber-950' : 'bg-emerald-200 text-emerald-950'
+              }`}>
+                {isPrivate ? 'Private' : 'Public'}
+              </span>
+            </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-gray-600 mb-1">
-                  Match Status
-                </label>
-                <select
-                  value={matchStatus}
-                  onChange={(e) => setMatchStatus(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs font-bold text-gray-800"
+            {/* Step 2: Goals & Final Score Allocation */}
+            <div className="rounded-2xl bg-gradient-to-br from-emerald-50/70 via-white to-gray-50/50 p-4 sm:p-5 border-2 border-emerald-500/30 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-[#00b074] text-white flex items-center justify-center font-black text-sm shadow-xs">
+                    ⚽
+                  </div>
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-black text-gray-900 tracking-tight">
+                      Score &amp; Goal Distribution
+                    </h4>
+                    <p className="text-[11px] text-gray-500">
+                      Set goals for each team, then click Auto-Distribute to schedule match minutes.
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-black text-gray-400 bg-white px-2 py-1 rounded-lg border border-gray-200">
+                  90 Min + 14m HT Break
+                </span>
+              </div>
+
+              {/* Goal Counters for Home & Away */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Home Goals */}
+                <div className="bg-white rounded-xl p-3 border border-emerald-200/80 shadow-2xs">
+                  <span className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider truncate mb-1">
+                    {homeTeam || 'Home Team'} Goals
+                  </span>
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextH = Math.max(0, finalHomeScore - 1);
+                        setFinalHomeScore(nextH);
+                        handleSyncGoalsToFinalScore(nextH, finalAwayScore);
+                      }}
+                      className="w-9 h-9 rounded-lg bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-700 font-black text-base flex items-center justify-center transition cursor-pointer"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <span className="text-2xl font-black text-gray-900 font-mono">
+                      {finalHomeScore}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextH = Math.min(15, finalHomeScore + 1);
+                        setFinalHomeScore(nextH);
+                        handleSyncGoalsToFinalScore(nextH, finalAwayScore);
+                      }}
+                      className="w-9 h-9 rounded-lg bg-[#d9f3ea] hover:bg-[#00b074] hover:text-white active:scale-95 text-[#00b074] font-black text-base flex items-center justify-center transition cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Away Goals */}
+                <div className="bg-white rounded-xl p-3 border border-emerald-200/80 shadow-2xs">
+                  <span className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider truncate mb-1">
+                    {awayTeam || 'Away Team'} Goals
+                  </span>
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextA = Math.max(0, finalAwayScore - 1);
+                        setFinalAwayScore(nextA);
+                        handleSyncGoalsToFinalScore(finalHomeScore, nextA);
+                      }}
+                      className="w-9 h-9 rounded-lg bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-700 font-black text-base flex items-center justify-center transition cursor-pointer"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <span className="text-2xl font-black text-gray-900 font-mono">
+                      {finalAwayScore}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextA = Math.min(15, finalAwayScore + 1);
+                        setFinalAwayScore(nextA);
+                        handleSyncGoalsToFinalScore(finalHomeScore, nextA);
+                      }}
+                      className="w-9 h-9 rounded-lg bg-[#d9f3ea] hover:bg-[#00b074] hover:text-white active:scale-95 text-[#00b074] font-black text-base flex items-center justify-center transition cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Auto-Distribute Goal Minutes Button */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSyncGoalsToFinalScore(finalHomeScore, finalAwayScore)}
+                  className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-[#00b074] to-[#0a873c] hover:brightness-105 active:scale-[0.99] text-white text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition cursor-pointer"
                 >
-                  <option value="UPCOMING">UPCOMING (Pre-Match)</option>
-                  <option value="LIVE">LIVE (In-Play)</option>
-                  <option value="FINISHED">FINISHED (Settled)</option>
-                </select>
+                  <Zap className="w-4 h-4 fill-white" />
+                  <span>Auto-Distribute Goal Minutes ({finalHomeScore} - {finalAwayScore})</span>
+                </button>
+                {goalSchedule.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleSyncGoalsToFinalScore(finalHomeScore, finalAwayScore)}
+                    title="Re-shuffle goal minutes"
+                    className="p-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 active:scale-95 transition cursor-pointer"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Timeline Preview of Allocated Goals */}
+              <div className="bg-white/90 rounded-xl p-3 border border-emerald-100 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-extrabold text-gray-700 flex items-center gap-1.5">
+                    <span>Allocated Goal Minutes</span>
+                    <span className="text-[10px] font-bold text-gray-400">({goalSchedule.length} total)</span>
+                  </span>
+                  <span className="text-[10px] text-gray-500 font-semibold">
+                    Target Score: <strong className="text-gray-900 font-mono">{finalHomeScore} - {finalAwayScore}</strong>
+                  </span>
+                </div>
+
+                {goalSchedule.length === 0 ? (
+                  <div className="text-center py-2 text-xs text-gray-400 font-medium">
+                    No goals scripted ({finalHomeScore}-{finalAwayScore} draw). Click Auto-Distribute to allocate minutes across the 90 mins.
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {goalSchedule.map((g, idx) => {
+                      const isHome = g.team === 'HOME';
+                      return (
+                        <div
+                          key={idx}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-black border ${
+                            isHome
+                              ? 'bg-blue-50/80 border-blue-200 text-blue-900'
+                              : 'bg-amber-50/80 border-amber-200 text-amber-900'
+                          }`}
+                        >
+                          <span>⚽ {g.minute}&apos;</span>
+                          <span className="font-extrabold truncate max-w-[120px]">
+                            {isHome ? (homeTeam || 'Home') : (awayTeam || 'Away')}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Direct Primary Action: Create Custom Match Button */}
+            <button
+              type="submit"
+              disabled={busy || (!canCreate && !editingId)}
+              className="w-full rounded-xl bg-[#00b074] hover:bg-[#0a873c] active:scale-[0.99] text-white py-3.5 text-xs sm:text-sm font-black uppercase tracking-wider shadow-md hover:shadow-lg transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+            >
+              <CheckCircle2 className="w-5 h-5" />
+              <span>{editingId ? 'Save Changes to Match' : 'Create Custom Match'}</span>
+            </button>
+
+            {/* Collapsible Accordion: Advanced Settings & Odds Configuration */}
+            <div className="border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="w-full px-4 py-3 bg-gray-50/70 hover:bg-gray-100 transition flex items-center justify-between text-left cursor-pointer"
+              >
+                <div className="flex items-center gap-2 text-gray-700">
+                  <SlidersHorizontal className="w-4 h-4 text-gray-500" />
+                  <span className="text-xs font-black uppercase tracking-wider">
+                    Advanced Settings (Match Status, Disciplinary Cards, Custom Odds)
+                  </span>
+                </div>
+                {showAdvanced ? (
+                  <ChevronUp className="w-4 h-4 text-gray-500" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                )}
+              </button>
+
+              {showAdvanced && (
+                <div className="p-4 space-y-4 border-t border-gray-100 bg-white">
+                  {/* Custom Game ID & Match Status */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                        Custom Game ID <span className="text-gray-400 font-normal">(Optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={customGameId}
+                        disabled={Boolean(editingId)}
+                        onChange={(e) => setCustomGameId(e.target.value)}
+                        placeholder="e.g. VIP2026 or MATCH884"
+                        className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs font-mono font-bold disabled:bg-gray-50 disabled:text-gray-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                        Match Status
+                      </label>
+                      <select
+                        value={matchStatus}
+                        onChange={(e) => setMatchStatus(e.target.value)}
+                        className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs font-bold text-gray-800"
+                      >
+                        <option value="UPCOMING">UPCOMING (Pre-Match)</option>
+                        <option value="LIVE">LIVE (In-Play)</option>
+                        <option value="FINISHED">FINISHED (Settled)</option>
+                      </select>
+                    </div>
+                  </div>
 
             {/* Scripted Match Events: Goals & Bookings (Cards) */}
             <div className="rounded-2xl bg-gray-50 p-4 border border-gray-100 space-y-3.5">
@@ -1486,16 +1709,9 @@ export default function CustomGames() {
                 </button>
               </div>
             </div>
-
-            <button
-              type="submit"
-              disabled={busy || (!canCreate && !editingId)}
-              className="w-full rounded-xl bg-[#00b074] hover:bg-[#0a873c] text-white py-3 text-xs sm:text-sm font-extrabold shadow-sm transition disabled:opacity-50"
-            >
-              {editingId
-                ? 'Save Changes to Created Game'
-                : 'Create Game in System'}
-            </button>
+                </div>
+              )}
+            </div>
           </form>
 
           {/* Right 5 Cols: Created Games List & Quick Actions */}
