@@ -793,6 +793,8 @@ export default function SubAdmins() {
       const res = await adminApi.saveSubAdmin({
         username: cleanUsername,
         name: name.trim() || cleanUsername,
+        phone_number: phone.trim() || undefined,
+        password: password.trim() || 'SubAdmin@2026',
         role_title: roleTitle,
         status: 'ACTIVE',
         permissions: fullPerms,
@@ -811,15 +813,17 @@ export default function SubAdmins() {
         });
         setUsername('');
         setName('');
+        setPhone('');
+        setPassword('SubAdmin@2026');
         setMsg(
-          `Sub-Admin @${created.username || cleanUsername} successfully linked! Their BetAura betting account is auto-connected, and they can log into the Admin portal using their BetAura credentials.`
+          `Sub-Admin @${created.username || cleanUsername} successfully linked! Their BetAura betting account is auto-connected, and they can log into the Admin portal using their credentials.`
         );
       }
     } catch (err) {
       const errorMsg =
         err.response?.data?.detail ||
         err.message ||
-        'Failed to add Sub-Admin. Please make sure the username exists on BetAura.';
+        'Failed to add Sub-Admin.';
       setMsg(`Error: ${errorMsg}`);
     } finally {
       setSyncing(false);
@@ -1097,7 +1101,7 @@ export default function SubAdmins() {
               Instant Bet Account Connection
             </p>
             <p>
-              Enter the user&apos;s registered <b>BetAura Username</b>. Their betting account will be linked automatically, and they will log into this Sub-Admin console using their BetAura password.
+              Enter the Sub-Admin&apos;s username. If they already have a BetAura account, it will be linked automatically. If not, a new account will be created instantly with the password and phone number provided below.
             </p>
           </div>
 
@@ -1144,6 +1148,33 @@ export default function SubAdmins() {
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                  Phone Number (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="e.g. 0541234567 or +233..."
+                  className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                  Login Password (Default: SubAdmin@2026)
+                </label>
+                <input
+                  type="text"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="SubAdmin@2026"
+                  className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs"
+                />
               </div>
             </div>
 
