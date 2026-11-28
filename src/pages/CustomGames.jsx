@@ -847,6 +847,54 @@ export default function CustomGames() {
     setTimeout(() => setCopiedCode(''), 2000);
   }
 
+  async function handleQuickCopyMatchBookingCode(g) {
+    try {
+      setBusy(true);
+      let targetMarket = g.markets?.find((m) => m?.visible && Array.isArray(m?.outcomes) && m.outcomes.length > 0);
+      let targetOutcome = targetMarket?.outcomes?.[0];
+
+      const csMarket = g.markets?.find((m) => m?.market_name === 'Correct Score');
+      if (csMarket && Array.isArray(csMarket.outcomes)) {
+        const expectedScore = `${g.final_home_score}-${g.final_away_score}`;
+        const matchOutcome = csMarket.outcomes.find((o) => o?.outcome_name === expectedScore);
+        if (matchOutcome) {
+          targetMarket = csMarket;
+          targetOutcome = matchOutcome;
+        }
+      }
+
+      if (!targetMarket || !targetOutcome) {
+        setStatusBanner(`No valid markets found for ${g.home_team} vs ${g.away_team}`);
+        return;
+      }
+
+      const payload = [
+        {
+          fixture_id: g.id,
+          market_name: targetMarket.market_name,
+          outcome_name: targetOutcome.outcome_name,
+          odds: Number(targetOutcome.odds || 2.0),
+          home_team: g.home_team,
+          away_team: g.away_team,
+          league_name: g.league_name,
+        },
+      ];
+
+      const res = await adminApi.createBookingCode(payload);
+      const code = res.data?.code || res.data;
+      if (code) {
+        copyText(code);
+        setStatusBanner(
+          `Copied Booking Code: ${code} (${g.home_team} vs ${g.away_team} — ${targetMarket.market_name}: ${targetOutcome.outcome_name} @ ${Number(targetOutcome.odds || 2.0).toFixed(2)})`
+        );
+      }
+    } catch (err) {
+      setStatusBanner(`Error creating booking code: ${err.response?.data?.detail || err.message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="space-y-5">
       {/* Header & Mode Switcher */}
@@ -1801,6 +1849,15 @@ export default function CustomGames() {
                       </div>
 
                       <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleQuickCopyMatchBookingCode(g)}
+                          className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-[#00b074] flex items-center gap-1 text-[11px] font-extrabold transition cursor-pointer"
+                          title="Copy Booking Code for this Match"
+                        >
+                          <Ticket className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Booking Code</span>
+                        </button>
                         {canEdit && (
                           <button
                             type="button"
